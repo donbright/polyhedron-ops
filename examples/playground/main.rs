@@ -102,8 +102,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         "Press one of:\n\
         ____________________________________________ Start Shapes (Reset) ______\n\
         [T]etrahedron              [P]rism ↑↓\n\
-        [C]ube (hexahedron)\n\
-        [O]ctahedron\n\
+        [C]ube (hexahedron)        [A]ntiprism ↑↓\n\
+        [O]ctahedron               P[Y]ramid ↑↓\n\
         [D]dodecahedron\n\
         [I]cosehedron\n\
         ______________________________________________________ Operations ______\n\
@@ -198,12 +198,19 @@ fn main() -> Result<(), Box<dyn Error>> {
                         render_quality = 9;
                     }
                     Key::A => {
-                        alter_last_op = false;
                         last_poly = poly.clone();
-                        last_op_value = 0.5;
-                        poly.ambo(None, true);
-                        poly.normalize();
-                        last_op = 'a';
+   						alter_last_op = false;
+                        if modifiers.intersects(Modifiers::Shift) {
+                            last_op_value = 0.03;
+                            poly = Polyhedron::antiprism(None);
+                            poly.normalize();
+                            last_op = 'A';
+                        } else {
+                        	last_op_value = 0.5;
+	                        poly.ambo(None, true);
+   	                        poly.normalize();
+							last_op = 'a';
+						}
                     }
                     Key::B => {
                         alter_last_op = false;
@@ -415,6 +422,14 @@ fn main() -> Result<(), Box<dyn Error>> {
                         poly.normalize();
                         last_op = 'x';
                     }
+                    Key::Y => {
+                        alter_last_op = false;
+                        last_poly = poly.clone();
+                        last_op_value = 0.04;
+                        poly = Polyhedron::pyramid(None, None);
+                        poly.normalize();
+                        last_op = 'Y';
+                    }
                     Key::Z => {
                         alter_last_op = false;
                         last_poly = poly.clone();
@@ -510,6 +525,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                         'a' => {
                             poly.ambo(Some(last_op_value), true);
                         }
+                        'A' => {
+                            poly = Polyhedron::antiprism(Some(
+                                (last_op_value * 100.) as _,
+                            ));
+                            poly.normalize();
+                        }
                         'b' => {
                             poly.bevel(
                                 Some(last_op_value),
@@ -598,6 +619,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                         }
                         'x' => {
                             poly.extrude(Some(last_op_value), None, None, true);
+                        }
+                        'Y' => {
+                            poly = Polyhedron::pyramid(Some(
+                                (last_op_value * 100.) as _,
+                            ),None);
+                            poly.normalize();
                         }
                         'z' => {
                             poly.zip(Some(last_op_value), None, None, true);

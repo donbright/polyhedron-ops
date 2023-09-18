@@ -16,7 +16,7 @@ impl Polyhedron {
                 Point::new(-c0, -c0, c0),
             ],
             face_index: vec![
-                vec![2, 1, 0],
+		         vec![2, 1, 0],
                 vec![3, 2, 0],
                 vec![1, 3, 0],
                 vec![2, 3, 1],
@@ -253,5 +253,29 @@ impl Polyhedron {
 
     pub fn antiprism(n: Option<usize>) -> Self {
         Self::protoprism(n, true)
+    }
+
+    pub fn pyramid(n: Option<usize>, height: Option<f32>) -> Self {
+		let n = n.unwrap_or(4);
+        let c0 = 1.0f32;
+		let height = height.unwrap_or( (c0*2.0).sqrt());
+        Self {
+            positions: vec![
+                Point::new(0.0, -c0+height, 0.0),
+                Point::new(c0, -c0, c0),
+                Point::new(c0, -c0, -c0),
+                Point::new(-c0, -c0, -c0),
+                Point::new(-c0, -c0, c0),
+            ],
+            face_index: vec![
+                vec![2, 1, 0],
+                vec![3, 2, 0],
+                vec![4, 3, 0],
+                vec![1, 4, 0],
+                vec![1, 2, 3, 4],
+            ],
+            face_set_index: vec![(0..5).collect()],
+            name: format!("Y{}", n),
+        }
     }
 }
