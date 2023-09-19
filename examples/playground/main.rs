@@ -199,18 +199,18 @@ fn main() -> Result<(), Box<dyn Error>> {
                     }
                     Key::A => {
                         last_poly = poly.clone();
-   						alter_last_op = false;
+                        alter_last_op = false;
                         if modifiers.intersects(Modifiers::Shift) {
                             last_op_value = 0.03;
                             poly = Polyhedron::antiprism(None);
                             poly.normalize();
                             last_op = 'A';
                         } else {
-                        	last_op_value = 0.5;
-	                        poly.ambo(None, true);
-   	                        poly.normalize();
-							last_op = 'a';
-						}
+                            last_op_value = 0.5;
+                            poly.ambo(None, true);
+                            poly.normalize();
+                            last_op = 'a';
+                        }
                     }
                     Key::B => {
                         alter_last_op = false;
@@ -621,9 +621,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                             poly.extrude(Some(last_op_value), None, None, true);
                         }
                         'Y' => {
-                            poly = Polyhedron::pyramid(Some(
-                                (last_op_value * 100.) as _,
-                            ),None);
+                            poly = Polyhedron::pyramid(
+                                Some((last_op_value * 100.) as _),
+                                None,
+                            );
                             poly.normalize();
                         }
                         'z' => {

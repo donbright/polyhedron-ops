@@ -16,7 +16,7 @@ impl Polyhedron {
                 Point::new(-c0, -c0, c0),
             ],
             face_index: vec![
-		         vec![2, 1, 0],
+                vec![2, 1, 0],
                 vec![3, 2, 0],
                 vec![1, 3, 0],
                 vec![2, 3, 1],
@@ -256,32 +256,25 @@ impl Polyhedron {
     }
 
     pub fn pyramid(n: Option<usize>, height: Option<f32>) -> Self {
-		let n = n.unwrap_or(4);
-		let c0 = 1.0;
+        let n = n.unwrap_or(4);
+        let c0 = 1.0;
+        let height = height.unwrap_or(c0);
 
         // Angles.
         let theta = f32::TAU() / n as f32;
-        // Half-edge.
-        let h = (theta * 0.5).sin();
 
-		let height = height.unwrap_or( c0 );
-
-		// bottom face
-        let mut face_index = vec![
-            (0..n).map(|i| i as VertexKey).collect::<Vec<_>>()
-        ];
+        // bottom face
+        let mut face_index =
+            vec![(0..n).rev().map(|i| i as VertexKey).collect::<Vec<_>>()];
 
         // Sides.
-        face_index.extend(
-            (0..n)
-                .map(|i| {
-                    vec![
-                            (n) as VertexKey,
-                            ((i + 1) % n) as VertexKey,
-                            (i) as VertexKey,
-                        ]
-                    })
-            );
+        face_index.extend((0..n).map(|i| {
+            vec![
+                (n) as VertexKey,
+                (i) as VertexKey,
+                ((i + 1) % n) as VertexKey,
+            ]
+        }));
 
         Self {
             name: format!("Y{}", n),
@@ -289,24 +282,21 @@ impl Polyhedron {
                 .map(move |i| {
                     Point::new(
                         (i as f32 * theta).cos() as _,
-                        -c0/2.0,
+                        -c0 / 2.0,
                         (i as f32 * theta).sin() as _,
                     )
                 })
-                .chain((0..1).map(move |_| {
-                    Point::new(
-                        0.0,
-                        -c0/2.0+height,
-                        0.0,
-                    )
-                }))
+                .chain(
+                    (0..1)
+                        .map(move |_| Point::new(0.0, -c0 / 2.0 + height, 0.0)),
+                )
                 .collect(),
 
             face_index,
             face_set_index: Vec::new(),
         }
 
-/*        Self {
+        /*        Self {
             positions: vec![
                 Point::new(0.0, -c0+height, 0.0),
                 Point::new(c0, -c0, c0),

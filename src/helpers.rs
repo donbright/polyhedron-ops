@@ -220,7 +220,7 @@ pub(crate) fn _ordered_face_edges_(face: &FaceSlice) -> Edges {
 }
 
 /// Returns a [`Vec`] of anticlockwise
-/// ordered edges.
+/// ordered Edges in the given face.
 #[inline]
 pub(crate) fn ordered_face_edges(face: &FaceSlice) -> Edges {
     (0..face.len())
@@ -229,14 +229,20 @@ pub(crate) fn ordered_face_edges(face: &FaceSlice) -> Edges {
 }
 
 #[inline]
+// return the face within faces that contains the given edge. note that
+// if you feed it a list of faces where one of them has the wrong
+// winding vs the others, aka orientation is wrong (face 0 is clockwise
+// but face 1 is anticlockwise) then this code will manufacture a face
+// that is not in the original list of faces. the 'flatten' will create
+// a face out of two faces by concatenating their index lists. this can
+// lead to errors later on in other code.
 pub(crate) fn face_with_edge(edge: &Edge, faces: &FacesSlice) -> Face {
-    let result = faces
-        .par_iter()
+    faces
+        .iter()
         .filter(|face| ordered_face_edges(face).contains(edge))
         .flatten()
         .cloned()
-        .collect();
-    result
+        .collect()
 }
 
 #[inline]
@@ -759,3 +765,113 @@ pub(crate) fn _distinct_edges(faces: &FacesSlice) -> Edges {
         .unique()
         .collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_positions_to_faces() {
+        /*	let p = Polyhedron::tetrahedron();
+        let reply = positions_to_faces(p.positions(),p.faces());
+        println!("{:?}",reply);
+        let p = Polyhedron::hexahedron();
+        let reply = positions_to_faces(p.positions(),p.faces());
+        println!("{:?}",reply);
+        let p = Polyhedron::icosahedron();
+        let reply = positions_to_faces(p.positions(),p.faces());
+        println!("{:?}",reply);*/
+        let p = Polyhedron::pyramid(Some(4), None);
+        let reply = positions_to_faces(p.positions(), p.faces());
+        println!("{:?}", reply);
+    }
+
+    #[test]
+    fn test_vertex_faces() {
+        let p = Polyhedron::tetrahedron();
+        for i in 0..4 {
+            let r = vertex_faces(i as VertexKey, p.faces());
+            assert!(r.iter().all(|x| x.contains(&i)) == true);
+            assert!(r.len() == 3);
+        }
+        let p = Polyhedron::hexahedron();
+        for i in 0..8 {
+            let r = vertex_faces(i as VertexKey, p.faces());
+            assert!(r.iter().all(|x| x.contains(&i)) == true);
+            assert!(r.len() == 3);
+        }
+        let p = Polyhedron::icosahedron();
+        for i in 0..12 {
+            let r = vertex_faces(i as VertexKey, p.faces());
+            assert!(r.iter().all(|x| x.contains(&i)) == true);
+            assert!(r.len() == 5);
+        }
+        let p = Polyhedron::pyramid(Some(4), None);
+        for i in 0..5 {
+            let r = vertex_faces(i as VertexKey, p.faces());
+            assert!(r.iter().all(|x| x.contains(&i)) == true);
+            assert!(r.len() == if i <= 3 { 3 } else { 4 })
+        }
+    }
+
+    #[test]
+    fn test_ordered_face_edges() {
+        for p in [
+            Polyhedron::tetrahedron(),
+            Polyhedron::icosahedron(),
+            Polyhedron::prism(Some(4)),
+            Polyhedron::antiprism(Some(3)),
+            Polyhedron::pyramid(Some(4), None),
+        ] {
+            println!("{:?}", p.faces());
+            // basically we check each face of p,
+            // verify each edge given by o_f_e(f) is sane, and is in the face
+            for f in p.faces() {
+                let r = ordered_face_edges(f);
+                assert!(r.len() == f.len());
+                //println!("{:?}",r);
+                for e in &r {
+                    assert!(e.len() == 2);
+                    for vi in e {
+                        assert!(f.contains(&vi));
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_face_with_edge() {
+        for p in [
+            Polyhedron::tetrahedron(),
+            Polyhedron::icosahedron(),
+            Polyhedron::prism(Some(4)),
+            Polyhedron::antiprism(Some(3)),
+            Polyhedron::pyramid(Some(4), None),
+        ] {
+            println!("{:?}", p.faces());
+            for i in 0..p.faces().len() {
+                let f = &p.faces()[i];
+                println!("{:?}", f);
+                for j in 0..f.len() {
+                    let e = [f[j], f[(j + 1) % f.len()]];
+                    let r = face_with_edge(&e, p.faces());
+                    println!("{:?}{:?}", e, r);
+                    assert!(r == *f);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_ordered_vertex_faces() {
+        let p = Polyhedron::hexahedron();
+        /*	let f = ordered_vertex_faces(0 as VertexKey, p.faces());
+        println!("res 0{:?}",f);
+        let f = ordered_vertex_faces(1 as VertexKey, p.faces());
+        println!("res 1{:?}",f);
+        let f = ordered_vertex_faces(2 as VertexKey, p.faces());
+        println!("res 2{:?}",f);
+        let f = ordered_vertex_faces(3 as VertexKey, p.faces());
+        println!("res 3{:?}",f);*/
+    }
+} // mod

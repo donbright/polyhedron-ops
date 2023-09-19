@@ -78,7 +78,7 @@ fn make_antiprisms() {
 #[test]
 fn make_pyramids() {
     for i in 3..9 {
-        let pyramid = Polyhedron::pyramid(Some(i),None);
+        let pyramid = Polyhedron::pyramid(Some(i), None);
 
         #[cfg(feature = "obj")]
         pyramid
@@ -88,12 +88,29 @@ fn make_pyramids() {
         let f = pyramid.faces().len();
         let v = pyramid.positions_len();
         let e = pyramid.to_edges().len();
-		println!("{} {} {}",f,v,e);
+        println!("{} {} {}", f, v, e);
         assert!(f == i + 1);
         assert!(v == i + 1);
         assert!(e == i * 2);
         assert!(f + v - e == 2); // Euler's Formula
     }
+}
+
+#[test]
+fn make_tetrahedron() {
+    let tetra = Polyhedron::tetrahedron();
+
+    #[cfg(feature = "obj")]
+    tetra
+        .write_obj(&std::path::PathBuf::from("."), false)
+        .unwrap();
+
+    let f = tetra.faces().len();
+    let v = tetra.positions_len();
+    let e = tetra.to_edges().len();
+    assert!(f == 4);
+    assert!(v == 4);
+    assert!(f + v - e == 2); // Euler's Formula
 }
 
 #[cfg(feature = "parser")]
