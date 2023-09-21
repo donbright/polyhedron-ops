@@ -324,7 +324,6 @@ pub(crate) fn face_edges(
 pub(crate) fn _circumscribed_resize(positions: &mut Points, radius: Float) {
     center_on_centroid(positions);
     let average = _average_magnitude(positions);
-
     positions
         .par_iter_mut()
         .for_each(|v| *v *= radius / average);
@@ -780,7 +779,7 @@ mod tests {
         let p = Polyhedron::icosahedron();
         let reply = positions_to_faces(p.positions(),p.faces());
         println!("{:?}",reply);*/
-        let p = Polyhedron::pyramid(Some(4), None);
+        let p = Polyhedron::pyramid(Some(4));
         let reply = positions_to_faces(p.positions(), p.faces());
         println!("{:?}", reply);
     }
@@ -805,7 +804,7 @@ mod tests {
             assert!(r.iter().all(|x| x.contains(&i)) == true);
             assert!(r.len() == 5);
         }
-        let p = Polyhedron::pyramid(Some(4), None);
+        let p = Polyhedron::pyramid(Some(4));
         for i in 0..5 {
             let r = vertex_faces(i as VertexKey, p.faces());
             assert!(r.iter().all(|x| x.contains(&i)) == true);
@@ -820,7 +819,7 @@ mod tests {
             Polyhedron::icosahedron(),
             Polyhedron::prism(Some(4)),
             Polyhedron::antiprism(Some(3)),
-            Polyhedron::pyramid(Some(4), None),
+            Polyhedron::pyramid(Some(4)),
         ] {
             println!("{:?}", p.faces());
             // basically we check each face of p,
@@ -846,7 +845,7 @@ mod tests {
             Polyhedron::icosahedron(),
             Polyhedron::prism(Some(4)),
             Polyhedron::antiprism(Some(3)),
-            Polyhedron::pyramid(Some(4), None),
+            Polyhedron::pyramid(Some(4)),
         ] {
             println!("{:?}", p.faces());
             for i in 0..p.faces().len() {
@@ -864,14 +863,14 @@ mod tests {
 
     #[test]
     fn test_ordered_vertex_faces() {
-        let p = Polyhedron::hexahedron();
-        /*	let f = ordered_vertex_faces(0 as VertexKey, p.faces());
-        println!("res 0{:?}",f);
-        let f = ordered_vertex_faces(1 as VertexKey, p.faces());
-        println!("res 1{:?}",f);
-        let f = ordered_vertex_faces(2 as VertexKey, p.faces());
-        println!("res 2{:?}",f);
-        let f = ordered_vertex_faces(3 as VertexKey, p.faces());
-        println!("res 3{:?}",f);*/
+        let p = Polyhedron::icosahedron();
+		for i in 0..p.positions().len() {
+			let k = i as VertexKey;
+			let fs = vertex_faces(k,p.faces());
+	        let f = ordered_vertex_faces(k, &fs);
+       	 	println!("p faces{:?} k{}",p.faces(),k);
+        	println!("fs with k {:?}",fs);
+        	println!("res {:?}",f);
+		}
     }
-} // mod
+}

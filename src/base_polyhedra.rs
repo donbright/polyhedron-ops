@@ -4,6 +4,7 @@ use num_traits::float::FloatConst;
 /// # Base Shapes
 ///
 /// Start shape creation methods.
+
 impl Polyhedron {
     pub fn tetrahedron() -> Self {
         let c0 = 1.0;
@@ -255,12 +256,12 @@ impl Polyhedron {
         Self::protoprism(n, true)
     }
 
-    pub fn pyramid(n: Option<usize>, height: Option<f32>) -> Self {
+    pub fn pyramid(n: Option<usize>) -> Self {
         let n = n.unwrap_or(4);
         let c0 = 1.0;
-        let height = height.unwrap_or(c0);
+        let height = c0; 
 
-        // Angles.
+        // Angle.
         let theta = f32::TAU() / n as f32;
 
         // bottom face
@@ -295,24 +296,123 @@ impl Polyhedron {
             face_index,
             face_set_index: Vec::new(),
         }
-
-        /*        Self {
-            positions: vec![
-                Point::new(0.0, -c0+height, 0.0),
-                Point::new(c0, -c0, c0),
-                Point::new(c0, -c0, -c0),
-                Point::new(-c0, -c0, -c0),
-                Point::new(-c0, -c0, c0),
-            ],
-            face_index: vec![
-                vec![2, 1, 0],
-                vec![3, 2, 0],
-                vec![4, 3, 0],
-                vec![1, 4, 0],
-                vec![1, 2, 3, 4],
-            ],
-            face_set_index: vec![(0..5).collect()],
-            name: format!("Y{}", n),
-        }*/
     }
+
+	pub fn cupola(n: Option<usize>) -> Self {
+        let n = n.unwrap_or(3); // # sides on top polygon
+		let n2 = 2*n; // # sides on base polygon
+
+        // Angles.
+        let theta = f32::TAU() / n as f32;
+        let theta2 = f32::TAU() / n2 as f32;
+        let twist = -theta2 / 2.0;
+
+        // Half-edge.
+        let h = (theta * 0.5).sin();
+
+        let mut face_index = vec![
+            (0..n).map(|i| i as VertexKey).collect::<Vec<_>>(), // top
+            (n..n+n2).rev().map(|i| i as VertexKey).collect::<Vec<_>>(), // base
+        ];
+
+        // Side faces
+            face_index.extend(
+                (0..n)
+                    .map(|i| {
+                        vec![
+                            i as VertexKey,
+                            ( n+2*i  ) as VertexKey,
+                            ( n+2*i+1 ) as VertexKey,
+                        ]
+                    })
+                    .chain(
+(0..n)
+.map(|i| {
+                        vec![
+                            ( n+ (i*2+1)%n2 ) as VertexKey,
+                            ( n+ (i*2+2)%n2 ) as VertexKey,
+                            ((i + 1) %n) as VertexKey,
+                            (i) as VertexKey,
+                        ]
+                    })),
+            );
+
+        Self {
+            name: format!("J{}", n),
+            positions: (0..n)
+                .map(move |i| {
+                    Point::new(
+                        (i as f32 * theta).cos() as _,
+                        h,
+                        (i as f32 * theta).sin() as _,
+                    )
+                })
+                .chain((0..n2).map(move |i| {
+                    Point::new(
+                        (twist + i as f32 * theta2).cos()*2.0 as f32,
+                        -h,
+                        (twist + i as f32 * theta2).sin()*2.0 as f32,
+                    )
+                }))
+                .collect(),
+
+            face_index,
+            face_set_index: Vec::new(),
+        }
+	}
 }
+
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+	fn dumpobj(p:&Polyhedron){
+			       #[cfg(feature = "obj")]
+        p
+            .write_obj(&std::path::PathBuf::from("."), false)
+            .unwrap();
+	}
+    #[test]
+	fn test_pyramid() {
+		let p = Polyhedron::pyramid(Some(4));
+		dumpobj(&p);
+        assert!(p.faces().len() == 5);
+        assert!(p.positions_len() == 5);
+        assert!(p.to_edges().len() == 8);
+	}	
+
+    #[test]
+	fn test_cupola() {
+		let p = Polyhedron::cupola(Some(3));
+		dumpobj(&p);
+        assert!(p.faces().len() == 8);
+        assert!(p.positions_len() == 9);
+        assert!(p.to_edges().len() == 15);
+	}	
+
+	
+    #[test]
+	fn test_polyhedra() {
+		for p in [
+			Polyhedron::tetrahedron(),
+            Polyhedron::icosahedron(),
+            Polyhedron::prism(Some(4)),
+            Polyhedron::prism(Some(7)),
+            Polyhedron::antiprism(Some(3)),
+            Polyhedron::antiprism(Some(8)),
+            Polyhedron::pyramid(Some(4)),
+            Polyhedron::pyramid(Some(9)),
+			Polyhedron::cupola(Some(3))] {
+				dumpobj(&p);
+	        let f = p.faces().len();
+   	     let v = p.positions_len();
+   	     let e = p.to_edges().len();
+   	     assert!(f + v - e == 2); // Euler's Formula
+			
+		}
+
+	}
+}
+
