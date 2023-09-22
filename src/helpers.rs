@@ -864,13 +864,13 @@ mod tests {
     #[test]
     fn test_ordered_vertex_faces() {
         let p = Polyhedron::icosahedron();
-		for i in 0..p.positions().len() {
-			let k = i as VertexKey;
-			let fs = vertex_faces(k,p.faces());
-	        let f = ordered_vertex_faces(k, &fs);
-       	 	println!("p faces{:?} k{}",p.faces(),k);
-        	println!("fs with k {:?}",fs);
-        	println!("res {:?}",f);
-		}
+        for i in 0..p.positions().len() {
+            let k = i as VertexKey;
+            let fs = vertex_faces(k, p.faces());
+            let f = ordered_vertex_faces(k, &fs);
+            println!("p faces{:?} k{}", p.faces(), k);
+            println!("fs with k {:?}", fs);
+            println!("res {:?}", f);
+        }
     }
 }

@@ -259,7 +259,7 @@ impl Polyhedron {
     pub fn pyramid(n: Option<usize>) -> Self {
         let n = n.unwrap_or(4);
         let c0 = 1.0;
-        let height = c0; 
+        let height = c0;
 
         // Angle.
         let theta = f32::TAU() / n as f32;
@@ -298,9 +298,12 @@ impl Polyhedron {
         }
     }
 
-	pub fn cupola(n: Option<usize>) -> Self {
+    pub fn cupola(n: Option<usize>) -> Self {
         let n = n.unwrap_or(3); // # sides on top polygon
-		let n2 = 2*n; // # sides on base polygon
+        let n2 = 2 * n; // # sides on base polygon
+
+		let r = 1.0f32; // radius of top polygon
+		let r2 = r * 3.0f32.sqrt(); // radius of base polygon
 
         // Angles.
         let theta = f32::TAU() / n as f32;
@@ -308,50 +311,51 @@ impl Polyhedron {
         let twist = -theta2 / 2.0;
 
         // Half-edge.
-        let h = (theta * 0.5).sin();
-
+        let h = r * 2.0f32.sqrt() / 2.0;
+		
         let mut face_index = vec![
             (0..n).map(|i| i as VertexKey).collect::<Vec<_>>(), // top
-            (n..n+n2).rev().map(|i| i as VertexKey).collect::<Vec<_>>(), // base
+            (n..n + n2)
+                .rev()
+                .map(|i| i as VertexKey)
+                .collect::<Vec<_>>(), // base
         ];
 
         // Side faces
-            face_index.extend(
-                (0..n)
-                    .map(|i| {
-                        vec![
-                            i as VertexKey,
-                            ( n+2*i  ) as VertexKey,
-                            ( n+2*i+1 ) as VertexKey,
-                        ]
-                    })
-                    .chain(
-(0..n)
-.map(|i| {
-                        vec![
-                            ( n+ (i*2+1)%n2 ) as VertexKey,
-                            ( n+ (i*2+2)%n2 ) as VertexKey,
-                            ((i + 1) %n) as VertexKey,
-                            (i) as VertexKey,
-                        ]
-                    })),
-            );
+        face_index.extend(
+            (0..n)
+                .map(|i| {
+                    vec![
+                        i as VertexKey,
+                        (n + 2 * i) as VertexKey,
+                        (n + 2 * i + 1) as VertexKey,
+                    ]
+                })
+                .chain((0..n).map(|i| {
+                    vec![
+                        (n + (i * 2 + 1) % n2) as VertexKey,
+                        (n + (i * 2 + 2) % n2) as VertexKey,
+                        ((i + 1) % n) as VertexKey,
+                        (i) as VertexKey,
+                    ]
+                })),
+        );
 
         Self {
             name: format!("J{}", n),
             positions: (0..n)
                 .map(move |i| {
                     Point::new(
-                        (i as f32 * theta).cos() as _,
+                        (i as f32 * theta).cos()*r as f32,
                         h,
-                        (i as f32 * theta).sin() as _,
+                        (i as f32 * theta).sin()*r as f32,
                     )
                 })
                 .chain((0..n2).map(move |i| {
                     Point::new(
-                        (twist + i as f32 * theta2).cos()*2.0 as f32,
+                        (twist + i as f32 * theta2).cos() * r2 as f32,
                         -h,
-                        (twist + i as f32 * theta2).sin()*2.0 as f32,
+                        (twist + i as f32 * theta2).sin() * r2 as f32,
                     )
                 }))
                 .collect(),
@@ -359,44 +363,56 @@ impl Polyhedron {
             face_index,
             face_set_index: Vec::new(),
         }
-	}
+    }
 }
-
-
-
 
 #[cfg(test)]
 mod tests {
     use super::*;
-	fn dumpobj(p:&Polyhedron){
-			       #[cfg(feature = "obj")]
-        p
-            .write_obj(&std::path::PathBuf::from("."), false)
-            .unwrap();
+
+    fn dumpobj(_p: &Polyhedron) {
+        #[cfg(feature = "obj")]
+        _p.write_obj(&std::path::PathBuf::from("."), false).unwrap();
+    }
+
+	// the Variance of the squared-edges of the given Polyhedron
+	// useful for polyhedrons where all edges are equal
+	fn edge_variance(p: &Polyhedron)->f32 {
+		let pts = p.positions();
+		let eds = p.to_edges();
+		let count = eds.clone().len();
+		let quads = eds.iter().map(|e|pts[e[0] as usize]-pts[e[1] as usize]).map(|d| d.mag_sq());
+		let mean = quads.clone().sum::<f32>() / count as f32;
+		quads.map(|d| (d-mean)*(d-mean) ).sum::<f32>() / (count as f32-1.0f32)
 	}
+
     #[test]
-	fn test_pyramid() {
-		let p = Polyhedron::pyramid(Some(4));
-		dumpobj(&p);
+    fn test_pyramid() {
+        let p = Polyhedron::pyramid(Some(4));
+        dumpobj(&p);
         assert!(p.faces().len() == 5);
         assert!(p.positions_len() == 5);
         assert!(p.to_edges().len() == 8);
-	}	
+    }
 
     #[test]
-	fn test_cupola() {
-		let p = Polyhedron::cupola(Some(3));
-		dumpobj(&p);
-        assert!(p.faces().len() == 8);
-        assert!(p.positions_len() == 9);
-        assert!(p.to_edges().len() == 15);
-	}	
+    fn test_cupola() {
+        let p = Polyhedron::cupola(Some(3));
+        dumpobj(&p);
+        let f = p.faces().len();
+        let v = p.positions_len();
+        let e = p.to_edges().len();
+        assert!(f == 8);
+        assert!(v == 9);
+        assert!(e == 15);
+        assert!(f + v - e == 2); // Euler's Formula
+		assert!(edge_variance(&p) < 0.001 );
+    }
 
-	
     #[test]
-	fn test_polyhedra() {
-		for p in [
-			Polyhedron::tetrahedron(),
+    fn test_polyhedra() {
+        for p in [
+            Polyhedron::tetrahedron(),
             Polyhedron::icosahedron(),
             Polyhedron::prism(Some(4)),
             Polyhedron::prism(Some(7)),
@@ -404,15 +420,13 @@ mod tests {
             Polyhedron::antiprism(Some(8)),
             Polyhedron::pyramid(Some(4)),
             Polyhedron::pyramid(Some(9)),
-			Polyhedron::cupola(Some(3))] {
-				dumpobj(&p);
-	        let f = p.faces().len();
-   	     let v = p.positions_len();
-   	     let e = p.to_edges().len();
-   	     assert!(f + v - e == 2); // Euler's Formula
-			
-		}
-
-	}
+            Polyhedron::cupola(Some(3)),
+        ] {
+            dumpobj(&p);
+            let f = p.faces().len();
+            let v = p.positions_len();
+            let e = p.to_edges().len();
+            assert!(f + v - e == 2); // Euler's Formula
+        }
+    }
 }
-
