@@ -302,16 +302,17 @@ impl Polyhedron {
         let n = n.unwrap_or(3); // # sides on top polygon
         let n2 = 2 * n; // # sides on base polygon
 
-		let r = 1.0f32; // radius of top polygon
-		let r2 = r * 3.0f32.sqrt(); // radius of base polygon
+		let mut r = [1.0f32;6]; // radius of top polygon always = 1
+		r[3] = r[0] * 3.0f32.sqrt(); // radius of base polygon for n=3
+		r[4] = r[0] * (2.0 + 2.0f32.sqrt()).sqrt(); // for n = 4
 
         // Angles.
         let theta = f32::TAU() / n as f32;
         let theta2 = f32::TAU() / n2 as f32;
         let twist = -theta2 / 2.0;
 
-        // Half-edge.
-        let h = r * 2.0f32.sqrt() / 2.0;
+        // Height from bottom to top
+        let h = r[0] * ((5 - n) as Float).sqrt()  ;
 		
         let mut face_index = vec![
             (0..n).map(|i| i as VertexKey).collect::<Vec<_>>(), // top
@@ -346,16 +347,16 @@ impl Polyhedron {
             positions: (0..n)
                 .map(move |i| {
                     Point::new(
-                        (i as f32 * theta).cos()*r as f32,
-                        h,
-                        (i as f32 * theta).sin()*r as f32,
+                        (i as f32 * theta).cos()*r[0] as f32,
+                        h/2.0,
+                        (i as f32 * theta).sin()*r[0] as f32,
                     )
                 })
                 .chain((0..n2).map(move |i| {
                     Point::new(
-                        (twist + i as f32 * theta2).cos() * r2 as f32,
-                        -h,
-                        (twist + i as f32 * theta2).sin() * r2 as f32,
+                        (twist + i as f32 * theta2).cos() * r[n] as f32,
+                        -h/2.0,
+                        (twist + i as f32 * theta2).sin() * r[n] as f32,
                     )
                 }))
                 .collect(),
@@ -382,6 +383,7 @@ mod tests {
 		let eds = p.to_edges();
 		let count = eds.clone().len();
 		let quads = eds.iter().map(|e|pts[e[0] as usize]-pts[e[1] as usize]).map(|d| d.mag_sq());
+		for q in quads.clone() { println!("{:?}",q); };
 		let mean = quads.clone().sum::<f32>() / count as f32;
 		quads.map(|d| (d-mean)*(d-mean) ).sum::<f32>() / (count as f32-1.0f32)
 	}
@@ -397,16 +399,18 @@ mod tests {
 
     #[test]
     fn test_cupola() {
-        let p = Polyhedron::cupola(Some(3));
-        dumpobj(&p);
-        let f = p.faces().len();
-        let v = p.positions_len();
-        let e = p.to_edges().len();
-        assert!(f == 8);
-        assert!(v == 9);
-        assert!(e == 15);
-        assert!(f + v - e == 2); // Euler's Formula
-		assert!(edge_variance(&p) < 0.001 );
+		for n in [3,4] {
+	        let p = Polyhedron::cupola(Some(n));
+   	     dumpobj(&p);
+   	     let f = p.faces().len();
+   	     let v = p.positions_len();
+   	     let e = p.to_edges().len();
+    	    assert!(f == n*2+2);
+       	 assert!(v == n+n*2);
+       	 assert!(e == n+n*2+n*2);
+       	 assert!(f + v - e == 2); // Euler's Formula
+			assert!(edge_variance(&p) < 0.001 );
+		}
     }
 
     #[test]
