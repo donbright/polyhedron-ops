@@ -278,10 +278,17 @@ fn main() -> Result<(), Box<dyn Error>> {
                     Key::J => {
                         alter_last_op = false;
                         last_poly = poly.clone();
-                        last_op_value = 0.5;
-                        poly.join(None, true);
-                        poly.normalize();
-                        last_op = 'j';
+                        if modifiers.intersects(Modifiers::Shift) {
+                            last_op_value = 0.03;
+                            poly = Polyhedron::johnson( Some((last_op_value*100.0) as usize));
+                            poly.normalize();
+                            last_op = 'J';
+                        } else {
+	                        last_op_value = 0.5;
+        	                poly.join(None, true);
+    	                    poly.normalize();
+	                        last_op = 'j';
+                        }
                     }
                     Key::K => {
                         alter_last_op = false;
@@ -426,7 +433,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                         alter_last_op = false;
                         last_poly = poly.clone();
                         last_op_value = 0.04;
-                        poly = Polyhedron::pyramid(None, None);
+                        poly = Polyhedron::pyramid(None);
                         poly.normalize();
                         last_op = 'Y';
                     }
@@ -555,6 +562,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                         'j' => {
                             poly.join(Some(last_op_value), true);
                         }
+                        'J' => {
+                            poly = Polyhedron::johnson(
+                                Some((last_op_value * 100.) as _),
+                            );
+                            poly.normalize();
+                        }
                         'k' => {
                             poly.kis(
                                 Some(last_op_value),
@@ -623,7 +636,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                         'Y' => {
                             poly = Polyhedron::pyramid(
                                 Some((last_op_value * 100.) as _),
-                                None,
                             );
                             poly.normalize();
                         }

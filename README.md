@@ -144,3 +144,12 @@ once your mesh hits this limit.
 
 Export & render will always yield a correct OBJ though. Which you can
 view in Wings, Blender or another DCC app.
+
+## Test
+
+To test a single base polyhedra and debug it:
+
+    RAYON_NUM_THREADS=1 cargo test cupola --features obj -- --nocapture --test-threads=1
+
+This should create several *.obj in your current path.
+

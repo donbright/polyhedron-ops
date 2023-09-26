@@ -1,5 +1,6 @@
 use crate::*;
 use num_traits::float::FloatConst;
+use core::iter::once;
 
 /// # Base Shapes
 ///
@@ -286,11 +287,9 @@ impl Polyhedron {
                         -c0 / 2.0,
                         (i as f32 * theta).sin() as _,
                     )
-                })
-                .chain(
-                    (0..1)
-                        .map(move |_| Point::new(0.0, -c0 / 2.0 + height, 0.0)),
-                )
+                }).chain(once(
+					Point::new(0.0, -c0 / 2.0 + height, 0.0)
+                ))
                 .collect(),
 
             face_index,
@@ -302,24 +301,30 @@ impl Polyhedron {
         let n = n.unwrap_or(3); // # sides on top polygon
         let n2 = 2 * n; // # sides on base polygon
 
-		let mut r = [1.0f32;6]; // radius of top polygon always = 1
+		let mut r = [1.0f32;10]; // radius of top polygon always = 1
 		r[3] = r[0] * 3.0f32.sqrt(); // radius of base polygon for n=3
 		r[4] = r[0] * (2.0 + 2.0f32.sqrt()).sqrt(); // for n = 4
+		r[5] = r[0] * (1./2.*(5. + (5.0f32.sqrt()))).sqrt();
 
-        // Angles.
-        let theta = f32::TAU() / n as f32;
-        let theta2 = f32::TAU() / n2 as f32;
-        let twist = -theta2 / 2.0;
+
+        let theta = f32::TAU() / n as f32;   // angle for top polygon
+        let theta2 = f32::TAU() / n2 as f32; // angle for bottom polygon
+        let twist = -theta2 / 2.0;           // twist bottom so faces are equal
 
         // Height from bottom to top
-        let h = r[0] * ((5 - n) as Float).sqrt()  ;
+        let h = match n {
+			3 => r[0] * 2.0f32.sqrt(),
+			4 => r[0] ,
+			5 => r[0] * (5.0f32.sqrt()-1.0) / 2.0,
+			_ => r[0],
+		};
 		
         let mut face_index = vec![
-            (0..n).map(|i| i as VertexKey).collect::<Vec<_>>(), // top
-            (n..n + n2)
+            (0..n).map(|i| i as VertexKey).collect::<Vec<_>>(), // top polygon
+            (n..n + n2) // base polygon
                 .rev()
                 .map(|i| i as VertexKey)
-                .collect::<Vec<_>>(), // base
+                .collect::<Vec<_>>(), 
         ];
 
         // Side faces
@@ -365,6 +370,13 @@ impl Polyhedron {
             face_set_index: Vec::new(),
         }
     }
+
+    pub fn johnson(n: Option<usize>) -> Self {
+		match n.unwrap_or(1) {
+			3..=5 => Polyhedron::cupola(n),
+			_ => Polyhedron::tetrahedron(),
+		}
+	}
 }
 
 #[cfg(test)]
@@ -399,7 +411,7 @@ mod tests {
 
     #[test]
     fn test_cupola() {
-		for n in [3,4] {
+		for n in [3,4,5] {
 	        let p = Polyhedron::cupola(Some(n));
    	     dumpobj(&p);
    	     let f = p.faces().len();
