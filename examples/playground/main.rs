@@ -280,14 +280,16 @@ fn main() -> Result<(), Box<dyn Error>> {
                         last_poly = poly.clone();
                         if modifiers.intersects(Modifiers::Shift) {
                             last_op_value = 0.03;
-                            poly = Polyhedron::johnson( Some((last_op_value*100.0) as usize));
+                            poly = Polyhedron::johnson(Some(
+                                (last_op_value * 100.0) as usize,
+                            ));
                             poly.normalize();
                             last_op = 'J';
                         } else {
-	                        last_op_value = 0.5;
-        	                poly.join(None, true);
-    	                    poly.normalize();
-	                        last_op = 'j';
+                            last_op_value = 0.5;
+                            poly.join(None, true);
+                            poly.normalize();
+                            last_op = 'j';
                         }
                     }
                     Key::K => {
@@ -563,9 +565,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                             poly.join(Some(last_op_value), true);
                         }
                         'J' => {
-                            poly = Polyhedron::johnson(
-                                Some((last_op_value * 100.) as _),
-                            );
+                            poly = Polyhedron::johnson(Some(
+                                (last_op_value * 100.) as _,
+                            ));
                             poly.normalize();
                         }
                         'k' => {
@@ -634,9 +636,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                             poly.extrude(Some(last_op_value), None, None, true);
                         }
                         'Y' => {
-                            poly = Polyhedron::pyramid(
-                                Some((last_op_value * 100.) as _),
-                            );
+                            poly = Polyhedron::pyramid(Some(
+                                (last_op_value * 100.) as _,
+                            ));
                             poly.normalize();
                         }
                         'z' => {

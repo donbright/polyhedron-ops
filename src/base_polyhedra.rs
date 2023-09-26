@@ -1,6 +1,6 @@
 use crate::*;
-use num_traits::float::FloatConst;
 use core::iter::once;
+use num_traits::float::FloatConst;
 
 /// # Base Shapes
 ///
@@ -287,9 +287,8 @@ impl Polyhedron {
                         -c0 / 2.0,
                         (i as f32 * theta).sin() as _,
                     )
-                }).chain(once(
-					Point::new(0.0, -c0 / 2.0 + height, 0.0)
-                ))
+                })
+                .chain(once(Point::new(0.0, -c0 / 2.0 + height, 0.0)))
                 .collect(),
 
             face_index,
@@ -297,34 +296,31 @@ impl Polyhedron {
         }
     }
 
+    // Cupolas, aka Johnson Solids J3 J4 J5
     pub fn cupola(n: Option<usize>) -> Self {
-        let n = n.unwrap_or(3); // # sides on top polygon
-        let n2 = 2 * n; // # sides on base polygon
+        let n = n.unwrap_or(3); // sides on top polygon
+        let n2 = 2 * n; // sides on bottom polygon
 
-		let mut r = [1.0f32;10]; // radius of top polygon always = 1
-		r[3] = r[0] * 3.0f32.sqrt(); // radius of base polygon for n=3
-		r[4] = r[0] * (2.0 + 2.0f32.sqrt()).sqrt(); // for n = 4
-		r[5] = r[0] * (1./2.*(5. + (5.0f32.sqrt()))).sqrt();
+        // helpers
+        let rt = |x| (x as f32).sqrt();
+        let phi = (rt(5.) + 1.) / 2.;
 
-
-        let theta = f32::TAU() / n as f32;   // angle for top polygon
-        let theta2 = f32::TAU() / n2 as f32; // angle for bottom polygon
-        let twist = -theta2 / 2.0;           // twist bottom so faces are equal
+        // circum radius of top polygon always p[0], of bottom polygon p[n]
+        let r = [1., 0., 0., rt(3.), rt(rt(2.) + 2.), rt(phi + 2.)];
 
         // Height from bottom to top
-        let h = match n {
-			3 => r[0] * 2.0f32.sqrt(),
-			4 => r[0] ,
-			5 => r[0] * (5.0f32.sqrt()-1.0) / 2.0,
-			_ => r[0],
-		};
-		
+        let h = [0., 0., 0., rt(2.), 1., phi - 1.];
+
+        let theta = f32::TAU() / n as f32; // angle for top polygon
+        let theta2 = f32::TAU() / n2 as f32; // angle for bottom polygon
+        let twist = -theta2 / 2.0; // twist bottom for side faces
+
         let mut face_index = vec![
             (0..n).map(|i| i as VertexKey).collect::<Vec<_>>(), // top polygon
             (n..n + n2) // base polygon
                 .rev()
                 .map(|i| i as VertexKey)
-                .collect::<Vec<_>>(), 
+                .collect::<Vec<_>>(),
         ];
 
         // Side faces
@@ -352,15 +348,15 @@ impl Polyhedron {
             positions: (0..n)
                 .map(move |i| {
                     Point::new(
-                        (i as f32 * theta).cos()*r[0] as f32,
-                        h/2.0,
-                        (i as f32 * theta).sin()*r[0] as f32,
+                        (i as f32 * theta).cos() * r[0] as f32,
+                        h[n] / 2.0,
+                        (i as f32 * theta).sin() * r[0] as f32,
                     )
                 })
                 .chain((0..n2).map(move |i| {
                     Point::new(
                         (twist + i as f32 * theta2).cos() * r[n] as f32,
-                        -h/2.0,
+                        -h[n] / 2.0,
                         (twist + i as f32 * theta2).sin() * r[n] as f32,
                     )
                 }))
@@ -371,12 +367,14 @@ impl Polyhedron {
         }
     }
 
+    // create a Johnson Solid
+    // if n=unimplemented, this creates a Tetrahedron
     pub fn johnson(n: Option<usize>) -> Self {
-		match n.unwrap_or(1) {
-			3..=5 => Polyhedron::cupola(n),
-			_ => Polyhedron::tetrahedron(),
-		}
-	}
+        match n.unwrap_or(1) {
+            3..=5 => Polyhedron::cupola(n),
+            _ => Polyhedron::tetrahedron(),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -388,17 +386,21 @@ mod tests {
         _p.write_obj(&std::path::PathBuf::from("."), false).unwrap();
     }
 
-	// the Variance of the squared-edges of the given Polyhedron
-	// useful for polyhedrons where all edges are equal
-	fn edge_variance(p: &Polyhedron)->f32 {
-		let pts = p.positions();
-		let eds = p.to_edges();
-		let count = eds.clone().len();
-		let quads = eds.iter().map(|e|pts[e[0] as usize]-pts[e[1] as usize]).map(|d| d.mag_sq());
-		for q in quads.clone() { println!("{:?}",q); };
-		let mean = quads.clone().sum::<f32>() / count as f32;
-		quads.map(|d| (d-mean)*(d-mean) ).sum::<f32>() / (count as f32-1.0f32)
-	}
+    // the Variance of the squared-edges of the given Polyhedron
+    // useful for polyhedrons where all edges are equal
+    fn edge_variance(p: &Polyhedron) -> f32 {
+        let pts = p.positions();
+        let eds = p.to_edges();
+        let count = eds.clone().len();
+        let quads = eds
+            .iter()
+            .map(|e| pts[e[0] as usize] - pts[e[1] as usize])
+            .map(|d| d.mag_sq());
+        // for q in quads.clone() { println!("{:?}",q); };
+        let mean = quads.clone().sum::<f32>() / count as f32;
+        quads.map(|d| (d - mean) * (d - mean)).sum::<f32>()
+            / (count as f32 - 1.0f32)
+    }
 
     #[test]
     fn test_pyramid() {
@@ -411,18 +413,18 @@ mod tests {
 
     #[test]
     fn test_cupola() {
-		for n in [3,4,5] {
-	        let p = Polyhedron::cupola(Some(n));
-   	     dumpobj(&p);
-   	     let f = p.faces().len();
-   	     let v = p.positions_len();
-   	     let e = p.to_edges().len();
-    	    assert!(f == n*2+2);
-       	 assert!(v == n+n*2);
-       	 assert!(e == n+n*2+n*2);
-       	 assert!(f + v - e == 2); // Euler's Formula
-			assert!(edge_variance(&p) < 0.001 );
-		}
+        for n in [3, 4, 5] {
+            let p = Polyhedron::cupola(Some(n));
+            dumpobj(&p);
+            let f = p.faces().len();
+            let v = p.positions_len();
+            let e = p.to_edges().len();
+            assert!(f == n * 2 + 2);
+            assert!(v == n + n * 2);
+            assert!(e == n + n * 2 + n * 2);
+            assert!(f + v - e == 2); // Euler's Formula
+            assert!(edge_variance(&p) < 0.001);
+        }
     }
 
     #[test]
