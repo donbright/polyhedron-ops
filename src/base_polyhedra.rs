@@ -367,11 +367,102 @@ impl Polyhedron {
         }
     }
 
+    // Rotunda, Johnson Solid J6
+    pub fn rotunda() -> Self {
+        let n = [5,5,10]; // sides on top, middle, and bottom polygon
+
+        // helpers
+        let rt = |x| (x as f32).sqrt();
+		let mktheta = |n| f32::TAU()/(n as f32);
+        let phi = (rt(5.) + 1.) / 2.;
+
+        // circum radius of top, mid, and bottom polygon
+        let r = [1., phi, rt(phi+2.)];
+
+        // height of top-to-mid, and mid-to-bottom 
+        let h = [0., phi-1., (phi+1.)/4.];
+		let htot = h[1]+h[2];
+
+		// angles for top, mid, bottom polygon
+        let theta = [5,5,10].map(|n| mktheta(n));
+		// twist middle polygon
+		let twist = [0.,theta[1]/2.,0.];
+
+		// top, mid, and bottom polygons
+        let mut face_index = vec![
+            (0..5).map(|i| i as VertexKey).collect::<Vec<_>>(),
+            (0..5).rev().map(|i| i as VertexKey).collect::<Vec<_>>(),
+            (0..10)
+                .map(|i| i as VertexKey)
+                .collect::<Vec<_>>(),
+        ];
+
+        // Side faces
+        face_index.extend(
+            (0..5)
+                .map(|i| {
+                    vec![
+                        i as VertexKey,
+                        (i+1) as VertexKey,
+                        (5+i) as VertexKey
+                    ]
+                })
+                .chain((0..5).map(|i| {
+                    vec![
+						(5+i) as VertexKey,
+						(5+5+i) as VertexKey,
+						(5+5+i+1) as VertexKey
+                    ]
+                }))
+//,
+/*                .chain((0..10).map(|i| {
+                    vec![
+                        (n + (i * 2 + 1) % n2) as VertexKey,
+                        (n + (i * 2 + 2) % n2) as VertexKey,
+                        ((i + 1) % n) as VertexKey,
+                        (i) as VertexKey,
+                    ]
+                })),*/
+        );
+
+        Self {
+            name: format!("J6"),
+            positions: (0..5)
+                .map(move |i| {
+                    Point::new(
+                        (i as f32 * theta[0]).cos() * r[0] as f32,
+                        htot/2.,
+                        (i as f32 * theta[0]).sin() * r[0] as f32,
+                    )
+                })
+                .chain((0..5).map(move |i| {
+                    Point::new(
+                        (twist[1] + i as f32 * theta[1]).cos() * r[1] as f32,
+                        -htot / 2.0 + h[2],
+                        (twist[1] + i as f32 * theta[1]).sin() * r[1] as f32,
+                    )
+                }))
+                .chain((0..10).map(move |i| {
+                    Point::new(
+                        (i as f32 * theta[2]).cos() * r[2] as f32,
+                        -htot / 2.0,
+                        (i as f32 * theta[2]).sin() * r[2] as f32,
+                    )
+                }))
+                .collect(),
+
+            face_index,
+            face_set_index: Vec::new(),
+        }
+    }
+
     // create a Johnson Solid
     // if n=unimplemented, this creates a Tetrahedron
     pub fn johnson(n: Option<usize>) -> Self {
         match n.unwrap_or(1) {
+			1..=2 => Polyhedron::pyramid(Some(n.unwrap_or(1)+3)),
             3..=5 => Polyhedron::cupola(n),
+            6..=6 => Polyhedron::rotunda(),
             _ => Polyhedron::tetrahedron(),
         }
     }
@@ -427,6 +518,21 @@ mod tests {
         }
     }
 
+
+    #[test]
+    fn test_rotunda() {
+            let p = Polyhedron::rotunda();
+            dumpobj(&p);
+            let f = p.faces().len();
+            let v = p.positions_len();
+            let e = p.to_edges().len();
+            assert!(f == 17);
+            assert!(v == 5+5+10);
+            assert!(e == 5*5+5+5);
+            assert!(f + v - e == 2); // Euler's Formula
+            assert!(edge_variance(&p) < 0.001);
+    }
+
     #[test]
     fn test_polyhedra() {
         for p in [
@@ -439,6 +545,7 @@ mod tests {
             Polyhedron::pyramid(Some(4)),
             Polyhedron::pyramid(Some(9)),
             Polyhedron::cupola(Some(3)),
+            Polyhedron::cupola(Some(5)),
         ] {
             dumpobj(&p);
             let f = p.faces().len();

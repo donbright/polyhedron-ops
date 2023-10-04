@@ -104,7 +104,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         [T]etrahedron              [P]rism ↑↓\n\
         [C]ube (hexahedron)        [A]ntiprism ↑↓\n\
         [O]ctahedron               P[Y]ramid ↑↓\n\
-        [D]dodecahedron\n\         [J]ohnson Solid ↑↓\n\
+        [D]dodecahedron            [J]ohnson Solid ↑↓\n\
         [I]cosehedron\n\
         ______________________________________________________ Operations ______\n\
         [a]mbo ↑↓\n\
