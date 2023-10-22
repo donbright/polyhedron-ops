@@ -6,6 +6,85 @@ use num_traits::float::FloatConst;
 ///
 /// Start shape creation methods.
 
+// take "x,y,z" and return [x,y,z] floating point numbers
+// input can be integers or Φ or Φ⁻¹ 
+fn floatify(s: &String) -> Vec<f32> {
+    let phi = (1. + 5.0f32.sqrt()) / 2.;
+    let invphi = 1. / phi;
+	println!(":{}",s);
+    s.replace("Φ⁻¹", &format!("{}",invphi))
+        .replace("Φ", &format!("{}", phi))
+        .split(",")
+        .map(|x| x.parse::<f32>().unwrap())
+        .collect()
+}
+
+// given a string like = "±2,0,0" expand the plusminus and create
+// vectors of floating point, [+2.,0.,0.][-2.,2.,0.]
+// expand each plusminus as well
+// for "±2,0,±1" generate [-2,0,1][2,0,1][-2,0,-1][2,0,-1]
+// also understands ±Φ and ±Φ⁻¹ where Φ is the golden ratio 
+fn seed_points(s:&str)->Vec<Point> {
+    let mut v = vec!["".to_string()];
+    for c in s.chars().rev() {
+        match c {
+            '±' => {
+                v.extend(v.clone());
+                let vlen = v.len();
+                for (i, vi) in &mut v.iter_mut().enumerate() {
+                    vi.insert(0,['+', '-'][((2 * i + 1) / (vlen + 1)) % 2]);
+                    //println!("{} {}",i,vlen);
+                }
+            }
+            _ => {
+                for vi in &mut v {
+                    vi.insert(0,c)
+                }
+            }
+        }
+        //println!("{:?}{:?}", c, v);
+    }
+    let mut z: Vec<Point> = Vec::new();
+    for vi in v.iter().unique() {
+        let u = floatify(vi);
+        z.push(Point::new(u[0],u[1],u[2]));
+    }
+	z
+}
+
+#[cfg(test)]
+#[test]
+fn test_seed_points(){
+	assert!(seed_points("0,0,±1")==vec![
+	Point::new(0.,0.,1.),
+	Point::new(0.,0.,-1.)]);
+
+	assert!(seed_points("±2,0,±1")==vec![
+	Point::new(2.,0.,1.),
+	Point::new(2.,0.,-1.),
+	Point::new(-2.,0.,1.),
+	Point::new(-2.,0.,-1.)]);
+
+}
+
+// given [x,y,z] return [[x,y,z][z,x,y][y,z,x]]
+fn rotations(v:Point)->Points {
+	vec![
+	Point::new(v.x,v.y,v.z),
+	Point::new(v.z,v.x,v.y),
+	Point::new(v.y,v.z,v.x)
+	]
+}
+
+#[cfg(test)]
+#[test]
+fn test_rotations(){
+	assert!(rotations(Point::new(1.,2.,3.))==vec![
+Point::new(1.,2.,3.),
+Point::new(2.,3.,1.),
+Point::new(3.,1.,2.)]);
+}
+
 impl Polyhedron {
     pub fn tetrahedron() -> Self {
         let c0 = 1.0;
@@ -33,6 +112,7 @@ impl Polyhedron {
 
         Self {
             positions: vec![
+//				seed_points("±1,±1,±1")
                 Point::new(c0, c0, c0),
                 Point::new(c0, c0, -c0),
                 Point::new(c0, -c0, c0),
@@ -66,6 +146,7 @@ impl Polyhedron {
 
         Self {
             positions: vec![
+//				rotations(3,seed_points("±c0,0,0"))
                 Point::new(0.0, 0.0, c0),
                 Point::new(0.0, 0.0, -c0),
                 Point::new(c0, 0.0, 0.0),
@@ -94,6 +175,7 @@ impl Polyhedron {
 
         Self {
             positions: vec![
+//				rotations(3,seeds("±p,0,±p-1)).chain(seeds("±1,±1,±1"))
                 Point::new(0.0, 0.5, c1),
                 Point::new(0.0, 0.5, -c1),
                 Point::new(0.0, -0.5, c1),
@@ -136,6 +218,8 @@ impl Polyhedron {
 
     pub fn icosahedron() -> Self {
         let c0 = 0.809_017;
+//    let s = "±2,0,0";
+//    let s = "±Φ,±Φ⁻¹,±1";
 
         Self {
             positions: vec![
@@ -369,6 +453,9 @@ impl Polyhedron {
 
     // Rotunda, Johnson Solid J6
     pub fn rotunda() -> Self {
+//   let s = "±2,0,0";
+//    let s = "±Φ,±Φ⁻¹,±1";
+
         let n = [5,5,10]; // sides on top, middle, and bottom polygon
 
         // helpers
