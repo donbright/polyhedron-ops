@@ -1736,4 +1736,3 @@ impl Polyhedron {
         self
     }
 }
-

@@ -285,4 +285,3 @@ impl Polyhedron {
                 .collect()]);
     }
 }
-

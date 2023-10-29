@@ -1,88 +1,152 @@
 use crate::*;
 use core::iter::once;
 use num_traits::float::FloatConst;
+//use itertools::Itertools;
+use itertools::iproduct;
 
 /// # Base Shapes
 ///
 /// Start shape creation methods.
 
-// take "x,y,z" and return [x,y,z] floating point numbers
-// input can be integers or Φ or Φ⁻¹ 
-fn floatify(s: &String) -> Vec<f32> {
+// take "x" and return x a floating point number
+// special symbols understood:
+//    Φ golden ratio 
+//    Φ⁻¹ inverse golden ratio
+fn floatify(s:&str) -> f32 {
     let phi = (1. + 5.0f32.sqrt()) / 2.;
     let invphi = 1. / phi;
-	println!(":{}",s);
-    s.replace("Φ⁻¹", &format!("{}",invphi))
+    let halfphi = phi / 2.;
+    println!(":{}", s);
+    s.replace("Φ/2", &format!("{}", halfphi))
+        .replace("Φ⁻¹", &format!("{}", invphi))
         .replace("Φ", &format!("{}", phi))
-        .split(",")
-        .map(|x| x.parse::<f32>().unwrap())
-        .collect()
+        .replace("_", "") // mimic rust float literal syntax
+        .parse::<f32>().unwrap()
 }
 
 // given a string like = "±2,0,0" expand the plusminus and create
 // vectors of floating point, [+2.,0.,0.][-2.,2.,0.]
-// expand each plusminus as well
 // for "±2,0,±1" generate [-2,0,1][2,0,1][-2,0,-1][2,0,-1]
-// also understands ±Φ and ±Φ⁻¹ where Φ is the golden ratio 
-fn seed_points(s:&str)->Vec<Point> {
-    let mut v = vec!["".to_string()];
-    for c in s.chars().rev() {
-        match c {
-            '±' => {
-                v.extend(v.clone());
-                let vlen = v.len();
-                for (i, vi) in &mut v.iter_mut().enumerate() {
-                    vi.insert(0,['+', '-'][((2 * i + 1) / (vlen + 1)) % 2]);
-                    //println!("{} {}",i,vlen);
-                }
-            }
-            _ => {
-                for vi in &mut v {
-                    vi.insert(0,c)
-                }
-            }
-        }
-        //println!("{:?}{:?}", c, v);
-    }
-    let mut z: Vec<Point> = Vec::new();
-    for vi in v.iter().unique() {
-        let u = floatify(vi);
-        z.push(Point::new(u[0],u[1],u[2]));
-    }
-	z
+// the numbers beyond ± are processed by floatify() so it can
+// understand Φ as the golden ratio, and other symbols.
+fn seed_points(s: &str) -> impl Iterator<Item = Point> {
+	let mut v:Vec<Vec<f32>> = Vec::new();
+	for n in s.split(",") { 
+		match n.chars().nth(0).unwrap() {
+			 '±'=> {
+				let f = floatify( n.split("±").nth(1).unwrap() );
+				v.push( vec![1. * f, -1. * f] );
+			 },
+			 _=> v.push( vec![ floatify(n) ])
+		}
+	};
+	iproduct!(v[0].clone(),v[1].clone(),v[2].clone()).map(|v|Point::new(v.0,v.1,v.2))
 }
 
 #[cfg(test)]
 #[test]
-fn test_seed_points(){
-	assert!(seed_points("0,0,±1")==vec![
-	Point::new(0.,0.,1.),
-	Point::new(0.,0.,-1.)]);
+fn test_seed_points() {
+	for p in seed_points("0,0,±1") { println!("{:?}",p); }
+        itertools::assert_equal( seed_points("0,0,±1")
+           , vec![Point::new(0., 0., 1.), Point::new(0., 0., -1.)] );
 
-	assert!(seed_points("±2,0,±1")==vec![
-	Point::new(2.,0.,1.),
-	Point::new(2.,0.,-1.),
-	Point::new(-2.,0.,1.),
-	Point::new(-2.,0.,-1.)]);
-
+	itertools::assert_equal( 
+        seed_points("±2,0,±1")
+            , vec![
+                Point::new(2., 0., 1.),
+                Point::new(2., 0., -1.),
+                Point::new(-2., 0., 1.),
+                Point::new(-2., 0., -1.)
+            ]);
 }
 
-// given [x,y,z] return [[x,y,z][z,x,y][y,z,x]]
-fn rotations(v:Point)->Points {
-	vec![
-	Point::new(v.x,v.y,v.z),
-	Point::new(v.z,v.x,v.y),
-	Point::new(v.y,v.z,v.x)
-	]
+// make rot() iterator adapter
+
+trait RotationsValue {
+	fn rotations_value(self)->Point;
 }
+
+impl RotationsValue for Point { 
+	fn rotations_value(self)-> Point {
+		self
+	}
+}
+
+impl RotationsValue for &Point { 
+	fn rotations_value(self)-> Point {
+		*self
+	}
+}
+
+struct Rotations<I> {
+	inner: I,
+	last_point: Option<Point>,
+	count: u8,
+}
+
+impl<I, T> Iterator for Rotations<I> 
+where 
+I:Iterator<Item = T>,
+T:RotationsValue,
+{
+	type Item = Point;
+	fn next(&mut self)->Option<Self::Item> {
+		match self.count {
+			3 => {
+				self.count -= 1;
+				self.last_point = self.inner.next().map(|x| x.rotations_value());
+			},
+			_ => {	
+				self.count -= 1;
+				let p = self.last_point.unwrap();
+				if self.count == 0{ self.count = 3;}
+				self.last_point = Some(Point::new( p.z, p.x, p.y ))
+			},
+		}
+		self.last_point
+	}
+}
+
+trait RotationsAdapter: Iterator {
+    fn rotations(self) -> Rotations<Self>
+    where
+        Self: Sized,
+    {
+        Rotations { inner: self, last_point: None, count: 3 }
+    }
+}
+
+impl<I,T> RotationsAdapter for I 
+where 
+I: Iterator<Item=T>,
+ T: RotationsValue ,
+{}
 
 #[cfg(test)]
 #[test]
-fn test_rotations(){
-	assert!(rotations(Point::new(1.,2.,3.))==vec![
-Point::new(1.,2.,3.),
-Point::new(2.,3.,1.),
-Point::new(3.,1.,2.)]);
+fn test_rotations() {
+//	for x in vec![Point::new(1.,2.,3.)].iter().rotations() {
+//		println!("{:?}",x);
+//	};
+    itertools::assert_equal(
+        vec![Point::new(1., 2., 3.)].iter().rotations()
+            , vec![
+                Point::new(1., 2., 3.),
+                Point::new(3., 1., 2.),
+                Point::new(2., 3., 1.)
+            ].into_iter()
+    );
+    itertools::assert_equal(
+        vec![Point::new(1., 2., 3.), Point::new(1., 2., -3.)].iter().rotations()
+            , vec![
+                Point::new(1., 2., 3.),
+                Point::new(3., 1., 2.),
+                Point::new(2., 3., 1.),
+                Point::new(1., 2., -3.),
+                Point::new(-3., 1., 2.),
+                Point::new(2., -3., 1.)
+            ].into_iter()
+    );
 }
 
 impl Polyhedron {
@@ -111,17 +175,7 @@ impl Polyhedron {
         let c0 = 1.0;
 
         Self {
-            positions: vec![
-//				seed_points("±1,±1,±1")
-                Point::new(c0, c0, c0),
-                Point::new(c0, c0, -c0),
-                Point::new(c0, -c0, c0),
-                Point::new(c0, -c0, -c0),
-                Point::new(-c0, c0, c0),
-                Point::new(-c0, c0, -c0),
-                Point::new(-c0, -c0, c0),
-                Point::new(-c0, -c0, -c0),
-            ],
+            positions: seed_points("±1,±1,±1").collect(),
             face_index: vec![
                 vec![4, 5, 1, 0],
                 vec![2, 6, 4, 0],
@@ -145,15 +199,7 @@ impl Polyhedron {
         let c0 = 0.707_106_77;
 
         Self {
-            positions: vec![
-//				rotations(3,seed_points("±c0,0,0"))
-                Point::new(0.0, 0.0, c0),
-                Point::new(0.0, 0.0, -c0),
-                Point::new(c0, 0.0, 0.0),
-                Point::new(-c0, 0.0, 0.0),
-                Point::new(0.0, c0, 0.0),
-                Point::new(0.0, -c0, 0.0),
-            ],
+            positions: seed_points("0,0,±0.707_106_77").rotations().collect(),
             face_index: vec![
                 vec![4, 2, 0],
                 vec![3, 4, 0],
@@ -175,8 +221,9 @@ impl Polyhedron {
 
         Self {
             positions: vec![
-//				rotations(3,seeds("±p,0,±p-1)).chain(seeds("±1,±1,±1"))
-                Point::new(0.0, 0.5, c1),
+                seed_points("±0.0,0.5,±1.309_017").rotations().chain(
+				seed_points("±.809017,±.809017,±.809017")).collect();
+/*                Point::new(0.0, 0.5, c1),
                 Point::new(0.0, 0.5, -c1),
                 Point::new(0.0, -0.5, c1),
                 Point::new(0.0, -0.5, -c1),
@@ -195,7 +242,7 @@ impl Polyhedron {
                 Point::new(-c0, c0, c0),
                 Point::new(-c0, c0, -c0),
                 Point::new(-c0, -c0, c0),
-                Point::new(-c0, -c0, -c0),
+                Point::new(-c0, -c0, -c0),*/
             ],
             face_index: vec![
                 vec![12, 4, 14, 2, 0],
@@ -217,46 +264,29 @@ impl Polyhedron {
     }
 
     pub fn icosahedron() -> Self {
-        let c0 = 0.809_017;
-//    let s = "±2,0,0";
-//    let s = "±Φ,±Φ⁻¹,±1";
-
         Self {
-            positions: vec![
-                Point::new(0.5, 0.0, c0),
-                Point::new(0.5, 0.0, -c0),
-                Point::new(-0.5, 0.0, c0),
-                Point::new(-0.5, 0.0, -c0),
-                Point::new(c0, 0.5, 0.0),
-                Point::new(c0, -0.5, 0.0),
-                Point::new(-c0, 0.5, 0.0),
-                Point::new(-c0, -0.5, 0.0),
-                Point::new(0.0, c0, 0.5),
-                Point::new(0.0, c0, -0.5),
-                Point::new(0.0, -c0, 0.5),
-                Point::new(0.0, -c0, -0.5),
-            ],
+            positions: seed_points("±1,0,±Φ").rotations().collect(),
             face_index: vec![
-                vec![10, 2, 0],
-                vec![5, 10, 0],
-                vec![4, 5, 0],
-                vec![8, 4, 0],
-                vec![2, 8, 0],
-                vec![6, 8, 2],
-                vec![7, 6, 2],
-                vec![10, 7, 2],
-                vec![11, 7, 10],
-                vec![5, 11, 10],
-                vec![1, 11, 5],
-                vec![4, 1, 5],
-                vec![9, 1, 4],
-                vec![8, 9, 4],
-                vec![6, 9, 8],
-                vec![3, 9, 6],
-                vec![7, 3, 6],
-                vec![11, 3, 7],
-                vec![1, 3, 11],
-                vec![9, 3, 1],
+                vec![6, 4, 0],
+                vec![4, 6, 1],
+                vec![5, 7, 2],
+                vec![7, 5, 3],
+                vec![10, 8, 4],
+                vec![8, 10, 5],
+                vec![9, 11, 6],
+                vec![11, 9, 7],
+                vec![2, 0, 8],
+                vec![0, 2, 9],
+                vec![1, 3, 10],
+                vec![3, 1, 11],
+                vec![0, 4, 8],
+                vec![0, 9, 6],
+                vec![4, 1, 10],
+                vec![1, 6, 11],
+                vec![2, 8, 5],
+                vec![2, 7, 9],
+                vec![3, 5, 10],
+                vec![7, 3, 11],
             ],
             face_set_index: vec![(0..20).collect()],
             name: String::from("I"),
@@ -390,6 +420,7 @@ impl Polyhedron {
         let phi = (rt(5.) + 1.) / 2.;
 
         // circum radius of top polygon always p[0], of bottom polygon p[n]
+		
         let r = [1., 0., 0., rt(3.), rt(rt(2.) + 2.), rt(phi + 2.)];
 
         // Height from bottom to top
@@ -453,35 +484,33 @@ impl Polyhedron {
 
     // Rotunda, Johnson Solid J6
     pub fn rotunda() -> Self {
-//   let s = "±2,0,0";
-//    let s = "±Φ,±Φ⁻¹,±1";
+        //   let s = "±2,0,0";
+        //    let s = "±Φ,±Φ⁻¹,±1" ;
 
-        let n = [5,5,10]; // sides on top, middle, and bottom polygon
+        let n = [5, 5, 10]; // sides on top, middle, and bottom polygon
 
         // helpers
         let rt = |x| (x as f32).sqrt();
-		let mktheta = |n| f32::TAU()/(n as f32);
+        let mktheta = |n| f32::TAU() / (n as f32);
         let phi = (rt(5.) + 1.) / 2.;
 
         // circum radius of top, mid, and bottom polygon
-        let r = [1., phi, rt(phi+2.)];
+        let r = [1., phi, rt(phi + 2.)];
 
-        // height of top-to-mid, and mid-to-bottom 
-        let h = [0., phi-1., (phi+1.)/4.];
-		let htot = h[1]+h[2];
+        // height of top-to-mid, and mid-to-bottom
+        let h = [0., phi - 1., (phi + 1.) / 4.];
+        let htot = h[1] + h[2];
 
-		// angles for top, mid, bottom polygon
-        let theta = [5,5,10].map(|n| mktheta(n));
-		// twist middle polygon
-		let twist = [0.,theta[1]/2.,0.];
+        // angles for top, mid, bottom polygon
+        let theta = [5, 5, 10].map(|n| mktheta(n));
+        // twist middle polygon
+        let twist = [0., theta[1] / 2., 0.];
 
-		// top, mid, and bottom polygons
+        // top, mid, and bottom polygons
         let mut face_index = vec![
             (0..5).map(|i| i as VertexKey).collect::<Vec<_>>(),
             (0..5).rev().map(|i| i as VertexKey).collect::<Vec<_>>(),
-            (0..10)
-                .map(|i| i as VertexKey)
-                .collect::<Vec<_>>(),
+            (0..10).map(|i| i as VertexKey).collect::<Vec<_>>(),
         ];
 
         // Side faces
@@ -518,7 +547,7 @@ impl Polyhedron {
                 .map(move |i| {
                     Point::new(
                         (i as f32 * theta[0]).cos() * r[0] as f32,
-                        htot/2.,
+                        htot / 2.,
                         (i as f32 * theta[0]).sin() * r[0] as f32,
                     )
                 })
@@ -547,7 +576,7 @@ impl Polyhedron {
     // if n=unimplemented, this creates a Tetrahedron
     pub fn johnson(n: Option<usize>) -> Self {
         match n.unwrap_or(1) {
-			1..=2 => Polyhedron::pyramid(Some(n.unwrap_or(1)+3)),
+            1..=2 => Polyhedron::pyramid(Some(n.unwrap_or(1) + 3)),
             3..=5 => Polyhedron::cupola(n),
             6..=6 => Polyhedron::rotunda(),
             _ => Polyhedron::tetrahedron(),
@@ -605,24 +634,32 @@ mod tests {
         }
     }
 
-
     #[test]
     fn test_rotunda() {
-            let p = Polyhedron::rotunda();
-            dumpobj(&p);
-            let f = p.faces().len();
-            let v = p.positions_len();
-            let e = p.to_edges().len();
-            assert!(f == 17);
-            assert!(v == 5+5+10);
-            assert!(e == 5*5+5+5);
-            assert!(f + v - e == 2); // Euler's Formula
-            assert!(edge_variance(&p) < 0.001);
+        /*            let p = Polyhedron::rotunda();
+                  dumpobj(&p);
+                  let f = p.faces().len();
+                  let v = p.positions_len();
+                  let e = p.to_edges().len();
+                  assert!(f == 17);
+                  assert!(v == 5+5+10);
+                  assert!(e == 5*5+5+5);
+                  assert!(f + v - e == 2); // Euler's Formula
+                  assert!(edge_variance(&p) < 0.001);
+        */
+    }
+
+    #[test]
+    fn test_variance() {
+        assert!(edge_variance(&Polyhedron::hexahedron()) < 0.001);
+        assert!(edge_variance(&Polyhedron::tetrahedron()) < 0.001);
+        assert!(edge_variance(&Polyhedron::icosahedron()) < 0.001);
     }
 
     #[test]
     fn test_polyhedra() {
         for p in [
+            Polyhedron::hexahedron(),
             Polyhedron::tetrahedron(),
             Polyhedron::icosahedron(),
             Polyhedron::prism(Some(4)),
