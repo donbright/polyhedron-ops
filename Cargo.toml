@@ -22,6 +22,7 @@ parser = ["pest", "pest_derive"]
 # Add support to convert a Polyhedron into a bevy Mesh.
 bevy = { version = "0.10", default-features = false, features = ["bevy_render"], optional = true }
 bytemuck = "1.13.1"
+chull = "0.2.4"
 itertools = "0.10.5"
 # Add support to render polyhedra with NSI.
 nsi = { version = "0.7", features = ["toolbelt"], optional = true }
