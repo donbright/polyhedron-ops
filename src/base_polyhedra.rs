@@ -228,48 +228,11 @@ impl Polyhedron {
     }
 
     pub fn dodecahedron() -> Self {
-        let c0 = 0.809_017;
-        let c1 = 1.309_017;
-
+		let pts = seed_points("0,1,±Φ²").rotations(3).chain(
+				seed_points("±Φ,±Φ,±Φ")).collect();
         Self {
-            positions: 
-                seed_points("±0.0,0.5,±1.309_017").rotations(3).chain(
-				seed_points("±.809017,±.809017,±.809017")).collect()
-/*                Point::new(0.0, 0.5, c1),
-                Point::new(0.0, 0.5, -c1),
-                Point::new(0.0, -0.5, c1),
-                Point::new(0.0, -0.5, -c1),
-                Point::new(c1, 0.0, 0.5),
-                Point::new(c1, 0.0, -0.5),
-                Point::new(-c1, 0.0, 0.5),
-                Point::new(-c1, 0.0, -0.5),
-                Point::new(0.5, c1, 0.0),
-                Point::new(0.5, -c1, 0.0),
-                Point::new(-0.5, c1, 0.0),
-                Point::new(-0.5, -c1, 0.0),
-                Point::new(c0, c0, c0),
-                Point::new(c0, c0, -c0),
-                Point::new(c0, -c0, c0),
-                Point::new(c0, -c0, -c0),
-                Point::new(-c0, c0, c0),
-                Point::new(-c0, c0, -c0),
-                Point::new(-c0, -c0, c0),
-                Point::new(-c0, -c0, -c0),*/
-            ,
-            face_index: vec![
-                vec![12, 4, 14, 2, 0],
-                vec![16, 10, 8, 12, 0],
-                vec![2, 18, 6, 16, 0],
-                vec![17, 10, 16, 6, 7],
-                vec![19, 3, 1, 17, 7],
-                vec![6, 18, 11, 19, 7],
-                vec![15, 3, 19, 11, 9],
-                vec![14, 4, 5, 15, 9],
-                vec![11, 18, 2, 14, 9],
-                vec![8, 10, 17, 1, 13],
-                vec![5, 4, 12, 8, 13],
-                vec![1, 3, 15, 5, 13],
-            ],
+            positions: pts,
+            face_index: convex_hull(pts),
             face_set_index: vec![(0..12).collect()],
             name: String::from("D"),
         }
@@ -672,6 +635,7 @@ mod tests {
     fn test_polyhedra() {
         for p in [
             Polyhedron::hexahedron(),
+            Polyhedron::dodecahedron(),
             Polyhedron::tetrahedron(),
             Polyhedron::icosahedron(),
             Polyhedron::prism(Some(4)),
@@ -691,3 +655,98 @@ mod tests {
         }
     }
 }
+
+
+fn square_pyramid()
+fn pentagonal_pyramid()
+fn triangular_cupola()
+fn square_cupola()
+fn pentagonal_cupola()
+fn pentagonal_rotunda()
+fn elongated_triangular_pyramid()
+fn elongated_square_pyramid()
+fn elongated_pentagonal_pyramid()
+fn gyroelongated_square_pyramid()
+fn gyroelongated_pentagonal_pyramid()
+fn triangular_dipyramid()
+fn pentagonal_dipyramid()
+fn elongated_triangular_dipyramid()
+fn elongated_square_dipyramid()
+fn elongated_pentagonal_dipyramid()
+fn gyroelongated_square_dipyramid()
+fn elongated_triangular_cupola()
+fn elongated_square_cupola()
+fn elongated_pentagonal_cupola()
+fn elongated_pentagonal_rotunda()
+fn gyroelongated_triangular_cupola()
+fn gyroelongated_square_cupola()
+fn gyroelongated_pentagonal_cupola()
+fn gyroelongated_pentagonal_rotunda()
+fn gyrobifastigium()
+fn triangular_orthobicupola()
+fn square_orthobicupola()
+fn square_gyrobicupola()
+fn pentagonal_orthobicupola()
+fn pentagonal_gyrobicupola()
+fn pentagonal_orthocupolarotunda()
+fn pentagonal_gyrocupolarotunda()
+fn pentagonal_orthobirotunda()
+fn elongated_triangular_orthobicupola()
+fn elongated_triangular_gyrobicupola()
+fn elongated_square_gyrobicupola()
+fn elongated_pentagonal_orthobicupola()
+fn elongated_pentagonal_gyrobicupola()
+fn elongated_pentagonal_orthocupolarotunda()
+fn elongated_pentagonal_gyrocupolarotunda()
+fn elongated_pentagonal_orthobirotunda()
+fn elongated_pentagonal_gyrobirotunda()
+fn gyroelongated_triangular_bicupola()
+fn gyroelongated_square_bicupola()
+fn gyroelongated_pentagonal_bicupola()
+fn gyroelongated_pentag()
+fn gyroelongated_pentagonal_birotunda()
+fn augmented_triangular_prism()
+fn biaugmented_triangular_prism()
+fn triaugmented_triangular_prism()
+fn augmented_pentagonal_prism()
+fn biaugmented_pentagonal_prism()
+fn augmented_hexagonal_prism()
+fn parabiaugmented_hexagonal_prism()
+fn metabiaugmented_hexagonal_prism()
+fn triaugmented_hexagonal_prism()
+fn augmented_dodecahedron()
+fn parabiaugmented_dodecahedron()
+fn metabiaugmented_dodecahedron()
+fn triaugmented_dodecahedron()
+fn metabidiminished_icosahedron()
+fn tridiminished_icosahedron()
+fn augmented_tridiminished_icosahedron()
+fn augmented_truncated_tetrahedron()
+fn augmented_truncated_cube()
+fn biaugmented_truncated_cube()
+fn augmented_truncated_dodecahedron()
+fn parabiaugmented_truncated()
+fn metabiaugmented_truncated()
+fn triaugmented_truncated_dodecahedron()
+fn gyrate_rhombicosidodecahedron()
+fn parabigyrate_rhombicosidodecahedron()
+fn metabigyrate_rhombicosidodecahedron()
+fn trigyrate_rhombicosidodecahedron()
+fn diminished_rhombicosidodecahedron()
+fn paragyrate_diminished()
+fn metagyrate_diminished()
+fn bigyrate_diminished()
+fn parabidiminished_rhombicosidodecahedron()
+fn metabidiminished_rhombicosidodecahedron()
+fn gyrate_bidiminished()
+fn tridiminished_rhombicosidodecahedron()
+fn snub_disphenoid()
+fn snub_square_antiprism()
+fn sphenocorona()
+fn augmented_sphenocorona()
+fn sphenomegacorona()
+fn hebesphenomegacorona()
+fn disphenocingulum()
+fn bilunabirotunda()
+fn triangular_hebesphenorotunda()
+fn ()
