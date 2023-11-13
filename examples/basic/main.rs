@@ -77,8 +77,8 @@ impl NormalMaterial {
             Context::ONE,
             Context::ONE_MINUS_SRC_ALPHA,
         );
-        ctxt.disable(Context::DEPTH_TEST);
 
+//        ctxt.disable(Context::DEPTH_TEST);
         ///////////////
         NormalMaterial {
             position: shader.get_attrib("position").unwrap(),
@@ -165,7 +165,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut window = Window::new("Polyhedron Operations");
     //        let ctxt = Context::get();
-    //	ctxt.enable(Context::BLEND);
+   // 	ctxt.enable(Context::BLEND);
     //	let mut s = window.add_sphere(1.0);
     //    s.set_material(material.clone());
 
@@ -216,9 +216,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // polyhedron edges
 
-        //window.set_line_width(1.0);
+        window.set_line_width(1.618);
 
-        /*for e in poly.to_edges() {
+        for e in poly.to_edges() {
             let p1 = poly.positions()[e[0] as usize];
             let p2 = poly.positions()[e[1] as usize];
             let kp1 = Point3::new(p1.x, p1.y, p1.z);
@@ -226,7 +226,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             let color = Point3::new(1.0, 1.0, 1.0);
             window.draw_line(&kp1, &kp2, &color);
             //        println!("{:?} {:?} {:?}",kp1, kp2,color );
-        }*/
+        }
 
     }
 
