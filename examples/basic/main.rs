@@ -61,7 +61,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mesh = Rc::new(RefCell::new(into_mesh(poly.clone())));
     let material = Rc::new(RefCell::new(
-        Box::new(mat::NormalMaterial::new()) as Box<dyn Material + 'static>
+        Box::new(material::NormalMaterial::new()) as Box<dyn Material + 'static>
     ));
 
     let mut c = window.add_mesh(mesh.clone(), Vector3::new(1.0, 1.0, 1.0));
