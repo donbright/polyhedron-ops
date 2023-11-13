@@ -27,7 +27,7 @@ fn floatify(s: &str) -> f32 {
         .replace("√(Φ+2)", &format!("{}", (phi + 2.).sqrt()))
         .replace("(Φ+2)", &format!("{}", phi + 2.))
         .replace("Φ-1", &format!("{}", phi - 1.))
-        .replace("Φ²/2", &format!("{}", phi * phi/2.))
+        .replace("Φ²/2", &format!("{}", phi * phi / 2.))
         .replace("Φ²", &format!("{}", phi * phi))
         .replace("Φ³", &format!("{}", phi * phi * phi))
         .replace("Φ⁻¹", &format!("{}", 1. / phi))
@@ -36,11 +36,11 @@ fn floatify(s: &str) -> f32 {
         .replace("1+√2", &format!("{}", 1. + 2.0f32.sqrt()))
         .replace("√3", &format!("{}", 3.0f32.sqrt()))
         .replace("√2", &format!("{}", 2.0f32.sqrt()))
-        .replace("2Φ", &format!("{}", 2.0*phi))
+        .replace("2Φ", &format!("{}", 2.0 * phi))
         .replace("Φ", &format!("{}", phi))
         .replace("--", "")
         .replace("_", "") // mimic rust float literal syntax
-	.replace(" ","");
+        .replace(" ", "");
     println!("{:?}", f);
     f.parse::<f32>().unwrap()
 }
@@ -52,7 +52,7 @@ fn floatify(s: &str) -> f32 {
 // understand Φ as the golden ratio, and other symbols.
 fn seed_points(s: &str) -> impl Iterator<Item = Point> {
     let mut v: Vec<Vec<f32>> = Vec::new();
-    for n in s.replace(" ","").split(",") {
+    for n in s.replace(" ", "").split(",") {
         match n.chars().nth(0).unwrap() {
             '±' => {
                 let f = floatify(n.split("±").nth(1).unwrap());
@@ -223,18 +223,11 @@ impl Polyhedron {
     }
 
     pub fn hexahedron() -> Self {
-        let c0 = 1.0;
-
+        let pts = seed_points("±1,±1,±1").collect();
+        let hull = convex_hull(&pts);
         Self {
-            positions: seed_points("±1,±1,±1").collect(),
-            face_index: vec![
-                vec![4, 5, 1, 0],
-                vec![2, 6, 4, 0],
-                vec![1, 3, 2, 0],
-                vec![6, 2, 3, 7],
-                vec![5, 4, 6, 7],
-                vec![3, 1, 5, 7],
-            ],
+            positions: pts,
+            face_index: hull,
             face_set_index: vec![(0..6).collect()],
             name: String::from("C"),
         }
@@ -247,66 +240,25 @@ impl Polyhedron {
     }
 
     pub fn octahedron() -> Self {
-        let c0 = 0.707_106_77;
-
+        let pts = seed_points("0,0,±1").rotations(3).collect();
+        let hull = convex_hull(&pts);
         Self {
-            positions: seed_points("0,0,±0.707_106_77").rotations(3).collect(),
-            face_index: vec![
-                vec![4, 2, 0],
-                vec![3, 4, 0],
-                vec![5, 3, 0],
-                vec![2, 5, 0],
-                vec![5, 2, 1],
-                vec![3, 5, 1],
-                vec![4, 3, 1],
-                vec![2, 4, 1],
-            ],
+            positions: pts,
+            face_index: hull,
             face_set_index: vec![(0..8).collect()],
             name: String::from("O"),
         }
     }
 
     pub fn dodecahedron() -> Self {
-		let pts = seed_points("0,1,±Φ²").rotations(3).chain(
-				seed_points("±Φ,±Φ,±Φ")).collect();
+        let pts = seed_points("0,1,±Φ²")
+            .rotations(3)
+            .chain(seed_points("±Φ,±Φ,±Φ"))
+            .collect();
+        let hull = convex_hull(&pts);
         Self {
-            positions: seed_points("±0.0,0.5,±1.309_017")
-                .rotations(3)
-                .chain(seed_points("±.809017,±.809017,±.809017"))
-                .collect(), /*                Point::new(0.0, 0.5, c1),
-                            Point::new(0.0, 0.5, -c1),
-                            Point::new(0.0, -0.5, c1),
-                            Point::new(0.0, -0.5, -c1),
-                            Point::new(c1, 0.0, 0.5),
-                            Point::new(c1, 0.0, -0.5),
-                            Point::new(-c1, 0.0, 0.5),
-                            Point::new(-c1, 0.0, -0.5),
-                            Point::new(0.5, c1, 0.0),
-                            Point::new(0.5, -c1, 0.0),
-                            Point::new(-0.5, c1, 0.0),
-                            Point::new(-0.5, -c1, 0.0),
-                            Point::new(c0, c0, c0),
-                            Point::new(c0, c0, -c0),
-                            Point::new(c0, -c0, c0),
-                            Point::new(c0, -c0, -c0),
-                            Point::new(-c0, c0, c0),
-                            Point::new(-c0, c0, -c0),
-                            Point::new(-c0, -c0, c0),
-                            Point::new(-c0, -c0, -c0),*/
-            face_index: vec![
-                vec![12, 4, 14, 2, 0],
-                vec![16, 10, 8, 12, 0],
-                vec![2, 18, 6, 16, 0],
-                vec![17, 10, 16, 6, 7],
-                vec![19, 3, 1, 17, 7],
-                vec![6, 18, 11, 19, 7],
-                vec![15, 3, 19, 11, 9],
-                vec![14, 4, 5, 15, 9],
-                vec![11, 18, 2, 14, 9],
-                vec![8, 10, 17, 1, 13],
-                vec![5, 4, 12, 8, 13],
-                vec![1, 3, 15, 5, 13],
-            ],
+            positions: pts,
+            face_index: hull,
             face_set_index: vec![(0..12).collect()],
             name: String::from("D"),
         }
@@ -502,26 +454,27 @@ impl Polyhedron {
 
     // https://en.wikipedia.org/wiki/Rhombicosidodecahedron
     pub fn rhombicosidodecahedron() -> Self {
-        let points = seed_points("±1, ±1, ±φ³").rotations(3)
+        let points = seed_points("±1, ±1, ±φ³")
+            .rotations(3)
             .chain(seed_points("±φ², ±φ, ±2φ").rotations(3))
             .chain(seed_points("±(φ+2), 0, ±φ²").rotations(3))
             .collect();
-	let hull = convex_hull(&points);
+        let hull = convex_hull(&points);
         Self {
             positions: points,
-            face_index: vec![vec![1,2,3]],
+            face_index: vec![vec![1, 2, 3]],
             face_set_index: vec![(0..1).collect()],
             name: String::from("eD"),
         }
     }
 
-
     // https://en.wikipedia.org/wiki/icosidodecahedron
     pub fn icosidodecahedron() -> Self {
-        let points = seed_points("0, 0, ±φ").rotations(3)
+        let points = seed_points("0, 0, ±φ")
+            .rotations(3)
             .chain(seed_points("±0.5, ±φ/2, ±φ²/2").rotations(3))
             .collect();
-	let hull = convex_hull(&points);
+        let hull = convex_hull(&points);
         Self {
             positions: points,
             face_index: hull,
@@ -536,7 +489,7 @@ impl Polyhedron {
             .positions()
             .iter()
             .cloned()
-            .filter(|p| p.z + 3.6 < 1.6*p.y)
+            .filter(|p| p.z + 3.6 < 1.6 * p.y)
             .collect::<Points>();
         let hull = convex_hull(&points);
         Self {
@@ -547,14 +500,14 @@ impl Polyhedron {
         }
     }
 
-	// https://mathworld.wolfram.com/PentagonalOrthobicupola.html
+    // https://mathworld.wolfram.com/PentagonalOrthobicupola.html
     pub fn pentagonal_orthobicupola() -> Self {
         let points = Self::pentagonal_cupola()
             .positions()
             .iter()
             .cloned()
             .collect::<Points>();
-	
+
         let hull = convex_hull(&points);
         Self {
             positions: points,
@@ -564,10 +517,9 @@ impl Polyhedron {
         }
     }
 
-
-	// https://en.wikipedia.org/wiki/Pentagonal_cupola
-	// https://www.geogebra.org/calculator/ef2uskfu 
-//https://mathworld.wolfram.com/PentagonalRotunda.html
+    // https://en.wikipedia.org/wiki/Pentagonal_cupola
+    // https://www.geogebra.org/calculator/ef2uskfu
+    //https://mathworld.wolfram.com/PentagonalRotunda.html
 
     pub fn pentagonal_rotunda() -> Self {
         let points = Self::icosidodecahedron()
@@ -702,7 +654,7 @@ mod tests {
     }
 }
 
-
+/*
 fn square_pyramid()
 fn pentagonal_pyramid()
 fn triangular_cupola()
@@ -795,4 +747,4 @@ fn hebesphenomegacorona()
 fn disphenocingulum()
 fn bilunabirotunda()
 fn triangular_hebesphenorotunda()
-fn ()
+*/
