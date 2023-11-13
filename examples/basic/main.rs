@@ -1,18 +1,18 @@
 use kiss3d::{
+    camera::Camera,
     camera::ArcBall,
     context::Context,
     light::Light,
     nalgebra as na,
-    resource::{Material, Mesh},
+    resource::{Effect, Material, Mesh, ShaderAttribute, ShaderUniform},
     window::Window,
+    scene::ObjectData,
 };
-use na::{Point3, Vector3};
+use na::{Isometry3, Matrix3, Matrix4, Point3, Vector3};
 use polyhedron_ops::*;
 use std::{cell::RefCell, env, error::Error, io, io::Write, rc::Rc};
 
 use itertools::Itertools;
-
-mod material;
 
 fn into_mesh(polyhedron: Polyhedron) -> Mesh {
     let (face_index, points, normals) = polyhedron.to_triangle_mesh_buffers();
@@ -40,6 +40,116 @@ fn into_mesh(polyhedron: Polyhedron) -> Mesh {
     )
 }
 
+
+
+
+
+
+//////////////////// glsl shader stuff
+// A material that draws normals
+pub struct NormalMaterial {
+    shader: Effect,
+    position: ShaderAttribute<Point3<f32>>,
+    normal: ShaderAttribute<Vector3<f32>>,
+    view: ShaderUniform<Matrix4<f32>>,
+    proj: ShaderUniform<Matrix4<f32>>,
+    transform: ShaderUniform<Matrix4<f32>>,
+    scale: ShaderUniform<Matrix3<f32>>,
+}
+
+impl NormalMaterial {
+    pub fn new() -> NormalMaterial {
+        let mut shader =
+            Effect::new_from_str(NORMAL_VERTEX_SRC, NORMAL_FRAGMENT_SRC);
+
+        //////////////
+
+        //        shader.use_program();
+        let ctxt = Context::get();
+        shader.use_program();
+
+        // this stuff enables alpha (transparency)
+        let _ = ctxt.polygon_mode(Context::FRONT_AND_BACK, Context::FILL);
+        ctxt.enable(Context::BLEND);
+        ctxt.blend_func_separate(
+            Context::SRC_ALPHA,
+            Context::ONE_MINUS_SRC_ALPHA,
+            Context::ONE,
+            Context::ONE_MINUS_SRC_ALPHA,
+        );
+        ctxt.disable(Context::DEPTH_TEST);
+
+        ///////////////
+        NormalMaterial {
+            position: shader.get_attrib("position").unwrap(),
+            normal: shader.get_attrib("normal").unwrap(),
+            transform: shader.get_uniform("transform").unwrap(),
+            scale: shader.get_uniform("scale").unwrap(),
+            view: shader.get_uniform("view").unwrap(),
+            proj: shader.get_uniform("proj").unwrap(),
+            shader,
+        }
+    }
+}
+
+impl Material for NormalMaterial {
+    fn render(
+        &mut self,
+        pass: usize,
+        transform: &Isometry3<f32>,
+        scale: &Vector3<f32>,
+        camera: &mut dyn Camera,
+        _: &Light,
+        _: &ObjectData,
+        mesh: &mut Mesh,
+    ) {
+        self.shader.use_program();
+        self.position.enable();
+        self.normal.enable();
+
+        /*
+         *
+         * Setup camera and light.
+         *
+         */
+        camera.upload(pass, &mut self.proj, &mut self.view);
+
+        /*
+         *
+         * Setup object-related stuffs.
+         *
+         */
+        let formated_transform = transform.to_homogeneous();
+        let formated_scale =
+            Matrix3::from_diagonal(&Vector3::new(scale.x, scale.y, scale.z));
+
+        self.transform.upload(&formated_transform);
+        self.scale.upload(&formated_scale);
+
+        mesh.bind_coords(&mut self.position);
+        mesh.bind_normals(&mut self.normal);
+        mesh.bind_faces();
+
+        Context::get().draw_elements(
+            Context::TRIANGLES,
+            mesh.num_pts() as i32,
+            Context::UNSIGNED_SHORT,
+            //VERTEX_INDEX_TYPE,
+            0,
+        );
+
+        mesh.unbind();
+
+        self.position.disable();
+        self.normal.disable();
+    }
+}
+
+static NORMAL_VERTEX_SRC: &str = include_str!("vert.glsl");
+static NORMAL_FRAGMENT_SRC: &str = include_str!("frag.glsl");
+//////////////////// end glsl shader stuff
+
+
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
 
@@ -61,7 +171,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mesh = Rc::new(RefCell::new(into_mesh(poly.clone())));
     let material = Rc::new(RefCell::new(
-        Box::new(material::NormalMaterial::new()) as Box<dyn Material + 'static>
+        Box::new(NormalMaterial::new()) as Box<dyn Material + 'static>
     ));
 
     let mut c = window.add_mesh(mesh.clone(), Vector3::new(1.0, 1.0, 1.0));
@@ -81,6 +191,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         // rotate the arc-ball camera.
         let curr_yaw = arc_ball.yaw();
         arc_ball.set_yaw(curr_yaw + 0.001);
+
+
+	// Polyhedron
+        window.render_with_camera(&mut arc_ball);
 
         // x y z axes
         window.draw_line(
@@ -113,9 +227,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             window.draw_line(&kp1, &kp2, &color);
             //        println!("{:?} {:?} {:?}",kp1, kp2,color );
         }*/
-
-	// Polyhedron
-        window.render_with_camera(&mut arc_ball);
 
     }
 

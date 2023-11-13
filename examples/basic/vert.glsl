@@ -1,4 +1,4 @@
-#version 100
+#version 130
 attribute vec3 position;
 attribute vec3 normal;
 uniform mat4 view;
