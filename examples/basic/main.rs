@@ -153,9 +153,11 @@ static NORMAL_FRAGMENT_SRC: &str = include_str!("frag.glsl");
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
 
-    let mut poly = Polyhedron::icosidodecahedron();
-    //        Polyhedron::icosahedron();
-    //Polyhedron::rhombicosidodecahedron();
+ //   let mut poly = Polyhedron::icosidodecahedron();
+//    let mut poly = Polyhedron::icosidodecahedron();
+    let mut poly =  Polyhedron::dodecahedron();
+//	let mut poly = Polyhedron::pentagonal_cupola();
+  //Polyhedron::rhombicosidodecahedron();
     poly.normalize();
     //	poly.reverse();
     let distance = 2.0f32;

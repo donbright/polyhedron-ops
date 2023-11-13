@@ -251,7 +251,7 @@ impl Polyhedron {
     }
 
     pub fn dodecahedron() -> Self {
-        let pts = seed_points("0,1,±Φ²")
+        let pts = seed_points("0,±Φ²,±1")
             .rotations(3)
             .chain(seed_points("±Φ,±Φ,±Φ"))
             .collect();
