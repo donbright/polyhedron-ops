@@ -456,10 +456,10 @@ impl Polyhedron {
 
     // https://en.wikipedia.org/wiki/Rhombicosidodecahedron
     pub fn truncated_cuboctahedron() -> Self {
-        let points = 
-seed_points("±1,±(1+√2),±(2+√2)").rotations(3).chain(
-seed_points("±(1+√2),±1,±(2+√2)").rotations(3)).chain(
-seed_points("±(2+√2),±1,±(1+√2)").rotations(3))
+        let points = seed_points("±1,±(1+√2),±(2+√2)")
+            .rotations(3)
+            .chain(seed_points("±(1+√2),±1,±(2+√2)").rotations(3))
+            .chain(seed_points("±(2+√2),±1,±(1+√2)").rotations(3))
             .collect();
         let hull = convex_hull(&points);
         Self {
@@ -501,16 +501,18 @@ seed_points("±(2+√2),±1,±(1+√2)").rotations(3))
         }
     }
 
-
     // https://en.wikipedia.org/wiki/snub_cube
     pub fn snub_cube() -> Self {
-		// the filters make the first group of points have an even number
-		// of negatives, the second group have an odd number of negatives.
-        let points = 
-            seed_points("±1,±0.54368,±0.2956").rotations(3).filter(|p| p.x*p.y*p.z>0.)
-  .chain(          seed_points("±0.54368,±1,±0.2956").rotations(3).
-filter(|p|p.x*p.y*p.z<0. ) )
-
+        // the filters make the first group of points have an even number
+        // of negatives, the second group have an odd number of negatives.
+        let points = seed_points("±1,±0.54368,±0.2956")
+            .rotations(3)
+            .filter(|p| p.x * p.y * p.z > 0.)
+            .chain(
+                seed_points("±0.54368,±1,±0.2956")
+                    .rotations(3)
+                    .filter(|p| p.x * p.y * p.z < 0.),
+            )
             .collect();
         let hull = convex_hull(&points);
         Self {
@@ -520,7 +522,6 @@ filter(|p|p.x*p.y*p.z<0. ) )
             name: String::from("aD"),
         }
     }
-
 
     // https://en.wikipedia.org/wiki/Pentagonal_cupola
     pub fn pentagonal_cupola() -> Self {

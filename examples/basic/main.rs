@@ -1,12 +1,11 @@
 use kiss3d::{
-    camera::Camera,
-    camera::ArcBall,
+    camera::{ArcBall, Camera},
     context::Context,
     light::Light,
     nalgebra as na,
     resource::{Effect, Material, Mesh, ShaderAttribute, ShaderUniform},
-    window::Window,
     scene::ObjectData,
+    window::Window,
 };
 use na::{Isometry3, Matrix3, Matrix4, Point3, Vector3};
 use polyhedron_ops::*;
@@ -39,11 +38,6 @@ fn into_mesh(polyhedron: Polyhedron) -> Mesh {
         false,
     )
 }
-
-
-
-
-
 
 //////////////////// glsl shader stuff
 // A material that draws normals
@@ -78,7 +72,7 @@ impl NormalMaterial {
             Context::ONE_MINUS_SRC_ALPHA,
         );
 
-//        ctxt.disable(Context::DEPTH_TEST);
+        //        ctxt.disable(Context::DEPTH_TEST);
         ///////////////
         NormalMaterial {
             position: shader.get_attrib("position").unwrap(),
@@ -149,17 +143,16 @@ static NORMAL_VERTEX_SRC: &str = include_str!("vert.glsl");
 static NORMAL_FRAGMENT_SRC: &str = include_str!("frag.glsl");
 //////////////////// end glsl shader stuff
 
-
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
 
- //   let mut poly = Polyhedron::icosidodecahedron();
-//    let mut poly = Polyhedron::icosidodecahedron();
-//    let mut poly =  Polyhedron::dodecahedron();
-//	let mut poly = Polyhedron::pentagonal_rotunda();
-//  let mut poly = Polyhedron::rhombicosidodecahedron();
-  let mut poly = Polyhedron::snub_cube();
-//	let mut poly = Polyhedron::truncated_cuboctahedron();
+    //   let mut poly = Polyhedron::icosidodecahedron();
+    //    let mut poly = Polyhedron::icosidodecahedron();
+    //    let mut poly =  Polyhedron::dodecahedron();
+    //	let mut poly = Polyhedron::pentagonal_rotunda();
+    //  let mut poly = Polyhedron::rhombicosidodecahedron();
+    let mut poly = Polyhedron::snub_cube();
+    //	let mut poly = Polyhedron::truncated_cuboctahedron();
     poly.normalize();
     //	poly.reverse();
     let distance = 2.0f32;
@@ -169,7 +162,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut window = Window::new("Polyhedron Operations");
     //        let ctxt = Context::get();
-   // 	ctxt.enable(Context::BLEND);
+    // 	ctxt.enable(Context::BLEND);
     //	let mut s = window.add_sphere(1.0);
     //    s.set_material(material.clone());
 
@@ -196,8 +189,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let curr_yaw = arc_ball.yaw();
         arc_ball.set_yaw(curr_yaw + 0.001);
 
-
-	// Polyhedron
+        // Polyhedron
         window.render_with_camera(&mut arc_ball);
 
         // x y z axes
@@ -217,21 +209,20 @@ fn main() -> Result<(), Box<dyn Error>> {
             &Point3::new(0.0, 0.0, 1.618),
         );
 
-
         // polyhedron edges
 
         window.set_line_width(1.618);
 
-/*        for e in poly.to_edges() {
+                for e in poly.to_edges() {
             let p1 = poly.positions()[e[0] as usize];
             let p2 = poly.positions()[e[1] as usize];
-            let kp1 = Point3::new(p1.x, p1.y, p1.z);
-            let kp2 = Point3::new(p2.x, p2.y, p2.z);
+		let k = 1.0001220703125;
+            let kp1 = Point3::new(k*p1.x, k*p1.y, k*p1.z);
+            let kp2 = Point3::new(k*p2.x, k*p2.y, k*p2.z);
             let color = Point3::new(1.0, 1.0, 1.0);
             window.draw_line(&kp1, &kp2, &color);
             //        println!("{:?} {:?} {:?}",kp1, kp2,color );
-        }*/
-
+        }
     }
 
     Ok(())
