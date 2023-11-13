@@ -102,9 +102,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // polyhedron edges
 
-        window.set_line_width(1.0);
+        //window.set_line_width(1.0);
 
-        for e in poly.to_edges() {
+        /*for e in poly.to_edges() {
             let p1 = poly.positions()[e[0] as usize];
             let p2 = poly.positions()[e[1] as usize];
             let kp1 = Point3::new(p1.x, p1.y, p1.z);
@@ -112,7 +112,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             let color = Point3::new(1.0, 1.0, 1.0);
             window.draw_line(&kp1, &kp2, &color);
             //        println!("{:?} {:?} {:?}",kp1, kp2,color );
-        }
+        }*/
 
 	// Polyhedron
         window.render_with_camera(&mut arc_ball);
