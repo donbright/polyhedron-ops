@@ -504,14 +504,13 @@ seed_points("±(2+√2),±1,±(1+√2)").rotations(3))
 
     // https://en.wikipedia.org/wiki/snub_cube
     pub fn snub_cube() -> Self {
+		// the filters make the first group of points have an even number
+		// of negatives, the second group have an odd number of negatives.
         let points = 
-            seed_points("+1,+0.54368,-1.83929").rotations(3)
-.chain(            seed_points("-1,+0.54368,+1.83929").rotations(3) )
-.chain(            seed_points("+1,-0.54368,+1.83929").rotations(3) )
-  .chain(          seed_points("+0.54368,-1,-1.83929").rotations(3) )
-  .chain(          seed_points("-0.54368,+1,-1.83929").rotations(3) )
-  .chain(          seed_points("-0.54368,-1,+1.83929").rotations(3) )
-  .chain(          seed_points("+0.54368,+1,+1.83929").rotations(3) )
+            seed_points("±1,±0.54368,±0.2956").rotations(3).filter(|p| p.x*p.y*p.z>0.)
+  .chain(          seed_points("±0.54368,±1,±0.2956").rotations(3).
+filter(|p|p.x*p.y*p.z<0. ) )
+
             .collect();
         let hull = convex_hull(&points);
         Self {
