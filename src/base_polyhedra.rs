@@ -33,6 +33,8 @@ fn floatify(s: &str) -> f32 {
         .replace("Φ⁻¹", &format!("{}", 1. / phi))
         .replace("Φ/2", &format!("{}", phi / 2.))
         .replace("Φ′", &format!("{}", phiprime))
+        .replace("(1+√2)", &format!("{}", 1. + 2.0f32.sqrt()))
+        .replace("(2+√2)", &format!("{}", 2. + 2.0f32.sqrt()))
         .replace("1+√2", &format!("{}", 1. + 2.0f32.sqrt()))
         .replace("√3", &format!("{}", 3.0f32.sqrt()))
         .replace("√2", &format!("{}", 2.0f32.sqrt()))
@@ -453,6 +455,22 @@ impl Polyhedron {
     }
 
     // https://en.wikipedia.org/wiki/Rhombicosidodecahedron
+    pub fn truncated_cuboctahedron() -> Self {
+        let points = 
+seed_points("±1,±(1+√2),±(2+√2)").rotations(3).chain(
+seed_points("±(1+√2),±1,±(2+√2)").rotations(3)).chain(
+seed_points("±(2+√2),±1,±(1+√2)").rotations(3))
+            .collect();
+        let hull = convex_hull(&points);
+        Self {
+            positions: points,
+            face_index: hull,
+            face_set_index: vec![(0..1).collect()],
+            name: String::from("bC"),
+        }
+    }
+
+    // https://en.wikipedia.org/wiki/Rhombicosidodecahedron
     pub fn rhombicosidodecahedron() -> Self {
         let points = seed_points("±1, ±1, ±φ³")
             .rotations(3)
@@ -462,7 +480,7 @@ impl Polyhedron {
         let hull = convex_hull(&points);
         Self {
             positions: points,
-            face_index: vec![vec![1, 2, 3]],
+            face_index: hull,
             face_set_index: vec![(0..1).collect()],
             name: String::from("eD"),
         }
@@ -470,9 +488,9 @@ impl Polyhedron {
 
     // https://en.wikipedia.org/wiki/icosidodecahedron
     pub fn icosidodecahedron() -> Self {
-        let points = seed_points("0, 0, ±φ")
+        let points = seed_points("0, 0, ±2φ")
             .rotations(3)
-            .chain(seed_points("±0.5, ±φ/2, ±φ²/2").rotations(3))
+            .chain(seed_points("±1, ±φ, ±φ²").rotations(3))
             .collect();
         let hull = convex_hull(&points);
         Self {
@@ -482,6 +500,28 @@ impl Polyhedron {
             name: String::from("aD"),
         }
     }
+
+
+    // https://en.wikipedia.org/wiki/snub_cube
+    pub fn snub_cube() -> Self {
+        let points = 
+            seed_points("+1,+0.54368,-1.83929").rotations(3)
+.chain(            seed_points("-1,+0.54368,+1.83929").rotations(3) )
+.chain(            seed_points("+1,-0.54368,+1.83929").rotations(3) )
+  .chain(          seed_points("+0.54368,-1,-1.83929").rotations(3) )
+  .chain(          seed_points("-0.54368,+1,-1.83929").rotations(3) )
+  .chain(          seed_points("-0.54368,-1,+1.83929").rotations(3) )
+  .chain(          seed_points("+0.54368,+1,+1.83929").rotations(3) )
+            .collect();
+        let hull = convex_hull(&points);
+        Self {
+            positions: points,
+            face_index: hull,
+            face_set_index: vec![(0..1).collect()],
+            name: String::from("aD"),
+        }
+    }
+
 
     // https://en.wikipedia.org/wiki/Pentagonal_cupola
     pub fn pentagonal_cupola() -> Self {
@@ -526,7 +566,7 @@ impl Polyhedron {
             .positions()
             .iter()
             .cloned()
-            .filter(|p| p.z + 0.7 > p.y)
+            .filter(|p| p.z + 1.6 > p.y)
             .collect::<Points>();
         let hull = convex_hull(&points);
         Self {

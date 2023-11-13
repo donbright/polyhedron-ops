@@ -155,9 +155,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
  //   let mut poly = Polyhedron::icosidodecahedron();
 //    let mut poly = Polyhedron::icosidodecahedron();
-    let mut poly =  Polyhedron::dodecahedron();
-//	let mut poly = Polyhedron::pentagonal_cupola();
-  //Polyhedron::rhombicosidodecahedron();
+//    let mut poly =  Polyhedron::dodecahedron();
+//	let mut poly = Polyhedron::pentagonal_rotunda();
+//  let mut poly = Polyhedron::rhombicosidodecahedron();
+  let mut poly = Polyhedron::snub_cube();
+//	let mut poly = Polyhedron::truncated_cuboctahedron();
     poly.normalize();
     //	poly.reverse();
     let distance = 2.0f32;
@@ -220,7 +222,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         window.set_line_width(1.618);
 
-        for e in poly.to_edges() {
+/*        for e in poly.to_edges() {
             let p1 = poly.positions()[e[0] as usize];
             let p2 = poly.positions()[e[1] as usize];
             let kp1 = Point3::new(p1.x, p1.y, p1.z);
@@ -228,7 +230,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             let color = Point3::new(1.0, 1.0, 1.0);
             window.draw_line(&kp1, &kp2, &color);
             //        println!("{:?} {:?} {:?}",kp1, kp2,color );
-        }
+        }*/
 
     }
 
